@@ -91,16 +91,20 @@ for i in range(numClusters):
 	
 	clusterCount[i] = count
 
-clusterCount = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)   # Orders the dictionary based on value, in descending order. So the first key (cluster #) is the one with the most rows
+# clusterCount is "sorted" by key/cluster number, so clusterCount[3][1] gives the number of rows in the third cluster.
+# clusterCountDesc is "sorted" based on value, in descending order. So the first key (cluster #) is the one with the most rows
+
 print(clusterCount)
-biggestCluster = clusterCount[0][0]
+clusterCountDesc = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
+print(clusterCountDesc)
+biggestCluster = clusterCountDesc[0][0]
 print(str(biggestCluster) + " is the cluster with the most elements")
 
 for i in range(3):
-	print("stdDev(d0L2) in cluster #" + str(clusterCount[i][0]) + " (" + str(clusterCount[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCount[i][0], 'd0L2')))
-	print("stdDev(d1L2) in cluster #" + str(clusterCount[i][0]) + " (" + str(clusterCount[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCount[i][0], 'd1L2')))
-	print("stdDev(d0Pe) in cluster #" + str(clusterCount[i][0]) + " (" + str(clusterCount[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCount[i][0], 'd0Pe')))		# For cycle, print the standard deviation of the top x clusters?
-	print("stdDev(d1Pe) in cluster #" + str(clusterCount[i][0]) + " (" + str(clusterCount[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCount[i][0], 'd1Pe')) + '\n')
+	print("stdDev(d0L2) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd0L2')))
+	print("stdDev(d1L2) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd1L2')))
+	print("stdDev(d0Pe) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd0Pe')))		# For cycle, print the standard deviation of the top x clusters?
+	print("stdDev(d1Pe) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd1Pe')) + '\n')
 
 # Prepare 3d plot and then show it
 
@@ -125,11 +129,11 @@ for i in range(numClusters):
 			tempListY.append(kmeans_dataset["Pressure (Bar)"].iloc[j])
 			tempListZ.append(kmeans_dataset["Phi"].iloc[j])
 	
-	xc.append(sum(tempListX) / clusterCount[i][1])
-	yc.append(sum(tempListY) / clusterCount[i][1])
-	zc.append(sum(tempListZ) / clusterCount[i][1])
+	xc.append(sum(tempListX) / clusterCount[i])
+	yc.append(sum(tempListY) / clusterCount[i])
+	zc.append(sum(tempListZ) / clusterCount[i])
 
-
+print("xc: " + str(xc))
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.set_xlabel('Temperature (K)')
