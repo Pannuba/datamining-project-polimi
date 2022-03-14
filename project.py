@@ -5,6 +5,8 @@ from matplotlib.colors import ListedColormap
 from mpl_toolkits.mplot3d import Axes3D
 from pathlib import Path
 
+#TODO: only use kmeans_dataset instead of mixing dataset and kmeans_dataset
+#TODO: centroid calculation sometimes fails
 
 def calculateAvg(dataset, column):
 
@@ -61,7 +63,7 @@ calculateAvg(kmeans_dataset, "Pressure (Bar)")
 calculateAvg(kmeans_dataset, "Temperature (K)")
 
 print(kmeans_dataset)
-numClusters = 20
+numClusters = 4
 
 cluster = sklearn.cluster.KMeans(n_clusters=numClusters)
 dataset["Cluster"] = cluster.fit_predict(kmeans_dataset)
@@ -102,16 +104,38 @@ for i in range(3):
 
 # Prepare 3d plot and then show it
 
-seaborn.set(style="darkgrid")
-
 x = [float(i) for i in kmeans_dataset['Temperature (K)']]
 y = [float(i) for i in kmeans_dataset['Pressure (Bar)']]
 z = [float(i) for i in kmeans_dataset['Phi']]
+
+xc = []
+yc = []
+zc = []
+
+for i in range(numClusters):
+
+	tempListX = []
+	tempListY = []
+	tempListZ = []
+
+	for j in range(dataset.shape[0]):
+
+		if dataset["Cluster"].iloc[j] == i:
+			tempListX.append(kmeans_dataset["Temperature (K)"].iloc[j])
+			tempListY.append(kmeans_dataset["Pressure (Bar)"].iloc[j])
+			tempListZ.append(kmeans_dataset["Phi"].iloc[j])
+	
+	xc.append(sum(tempListX) / clusterCount[i][1])
+	yc.append(sum(tempListY) / clusterCount[i][1])
+	zc.append(sum(tempListZ) / clusterCount[i][1])
+
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.set_xlabel('Temperature (K)')
 ax.set_ylabel('Pressure (Bar)')
 ax.set_zlabel('Phi')
-ax.scatter(x, y, z, c=dataset['Cluster'])
+ax.scatter(x, y, z, c=dataset['Cluster'], alpha=0.1)
+ax.scatter(xc, yc, zc, c='red', s=50, alpha=1)
+#ax.scatter([10, 20], [10, 20], [10, 20], c='red', s=50)
 plt.show()
