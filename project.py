@@ -1,6 +1,7 @@
 import openpyxl, pandas, sklearn, seaborn, math, statistics
 from sklearn.cluster import kmeans_plusplus, KMeans
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 from mpl_toolkits.mplot3d import Axes3D
 from pathlib import Path
 
@@ -60,7 +61,7 @@ calculateAvg(kmeans_dataset, "Pressure (Bar)")
 calculateAvg(kmeans_dataset, "Temperature (K)")
 
 print(kmeans_dataset)
-numClusters = 30
+numClusters = 20
 
 cluster = sklearn.cluster.KMeans(n_clusters=numClusters)
 dataset["Cluster"] = cluster.fit_predict(kmeans_dataset)
@@ -112,5 +113,5 @@ ax = fig.add_subplot(111, projection='3d')
 ax.set_xlabel('Temperature (K)')
 ax.set_ylabel('Pressure (Bar)')
 ax.set_zlabel('Phi')
-ax.scatter(x, y, z)
+ax.scatter(x, y, z, c=dataset['Cluster'])
 plt.show()
