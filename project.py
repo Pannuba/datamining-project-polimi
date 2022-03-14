@@ -1,25 +1,7 @@
-import openpyxl, pandas, sklearn, seaborn, math
+import openpyxl, pandas, sklearn, seaborn, math, statistics
 from sklearn.cluster import kmeans_plusplus, KMeans
-from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from pathlib import Path
-
-def standardDeviation(list):
-	
-	sum = 0
-
-	for i in range(len(list)):
-		sum += list[i]
-
-	avg = sum / len(list)
-	sum2 = 0
-
-	for i in range((len(list))):
-		sum2 += (list[i] - avg) * (list[i] - avg)
-
-	stdDev = math.sqrt(sum2/len(list))
-	return stdDev
-
 
 def calculateAvg(dataset, column):
 
@@ -36,8 +18,8 @@ def getStdDevOfColInCluster(dataset, clusterNumber, column):		# For the "convert
 	for i in range(dataset.shape[0]):
 		if dataset["Cluster"].iloc[i] == clusterNumber:
 			newList.append(dataset[column].iloc[i])
-
-	return standardDeviation(newList)
+	
+	return statistics.stdev(newList)
 
 
 def createDictAndUpdateTable(dataset, column):
@@ -76,7 +58,7 @@ calculateAvg(kmeans_dataset, "Pressure (Bar)")
 calculateAvg(kmeans_dataset, "Temperature (K)")
 
 print(kmeans_dataset)
-numClusters = 20
+numClusters = 30
 
 cluster = sklearn.cluster.KMeans(n_clusters=numClusters)
 dataset["Cluster"] = cluster.fit_predict(kmeans_dataset)
@@ -89,7 +71,7 @@ plt.show()
 
 # I have to get d0L1, L2... of the clusters with the most experiments (aka rows) and get their standard deviation.
 
-clusterCount = {}	  # key:value --> cluster:numRighe, meaning how many rows each cluster has
+clusterCount = {}	  # key:value --> cluster:numRows, meaning how many rows each cluster has
 
 for i in range(numClusters):
 
@@ -107,7 +89,7 @@ print(clusterCount)
 biggestCluster = clusterCount[0][0]
 print(str(biggestCluster) + " is the cluster with the most elements")
 
-for i in range(10):
+for i in range(3):
 	print("stdDev(d0L2) in cluster #" + str(clusterCount[i][0]) + " (" + str(clusterCount[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCount[i][0], 'd0L2')))
 	print("stdDev(d1L2) in cluster #" + str(clusterCount[i][0]) + " (" + str(clusterCount[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCount[i][0], 'd1L2')))
 	print("stdDev(d0Pe) in cluster #" + str(clusterCount[i][0]) + " (" + str(clusterCount[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCount[i][0], 'd0Pe')))		# For cycle, print the standard deviation of the top x clusters?
