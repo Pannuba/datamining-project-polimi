@@ -1,7 +1,9 @@
 import openpyxl, pandas, sklearn, seaborn, math, statistics
 from sklearn.cluster import kmeans_plusplus, KMeans
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from pathlib import Path
+
 
 def calculateAvg(dataset, column):
 
@@ -64,10 +66,12 @@ cluster = sklearn.cluster.KMeans(n_clusters=numClusters)
 dataset["Cluster"] = cluster.fit_predict(kmeans_dataset)
 print(dataset)
 
+'''
 reduced_data = sklearn.decomposition.PCA(n_components=2).fit_transform(kmeans_dataset)
 results = pandas.DataFrame(reduced_data,columns=['pca1','pca2'])
 seaborn.scatterplot(x="pca1", y="pca2", hue=dataset['Cluster'], data=results)
 plt.show()
+'''
 
 # I have to get d0L1, L2... of the clusters with the most experiments (aka rows) and get their standard deviation.
 
@@ -94,3 +98,19 @@ for i in range(3):
 	print("stdDev(d1L2) in cluster #" + str(clusterCount[i][0]) + " (" + str(clusterCount[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCount[i][0], 'd1L2')))
 	print("stdDev(d0Pe) in cluster #" + str(clusterCount[i][0]) + " (" + str(clusterCount[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCount[i][0], 'd0Pe')))		# For cycle, print the standard deviation of the top x clusters?
 	print("stdDev(d1Pe) in cluster #" + str(clusterCount[i][0]) + " (" + str(clusterCount[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCount[i][0], 'd1Pe')) + '\n')
+
+# Prepare 3d plot and then show it
+
+seaborn.set(style="darkgrid")
+
+x = [float(i) for i in kmeans_dataset['Temperature (K)']]
+y = [float(i) for i in kmeans_dataset['Pressure (Bar)']]
+z = [float(i) for i in kmeans_dataset['Phi']]
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.set_xlabel('Temperature (K)')
+ax.set_ylabel('Pressure (Bar)')
+ax.set_zlabel('Phi')
+ax.scatter(x, y, z)
+plt.show()
