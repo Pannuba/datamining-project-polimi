@@ -5,8 +5,9 @@ from matplotlib.colors import ListedColormap
 from mpl_toolkits.mplot3d import Axes3D
 from pathlib import Path
 
+pandas.set_option('display.max_rows', None)
+
 #TODO: only use kmeans_dataset instead of mixing dataset and kmeans_dataset
-#TODO: centroid calculation sometimes fails
 
 def calculateAvg(dataset, column):
 
@@ -63,9 +64,12 @@ calculateAvg(kmeans_dataset, "Pressure (Bar)")
 calculateAvg(kmeans_dataset, "Temperature (K)")
 
 print(kmeans_dataset)
-numClusters = 4
+kmeans_clusters = 20		# TODO: pass argument from command line
 
-cluster = sklearn.cluster.KMeans(n_clusters=numClusters)
+#cluster = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
+cluster = sklearn.cluster.OPTICS()
+#cluster = sklearn.cluster.AffinityPropagation()
+
 dataset["Cluster"] = cluster.fit_predict(kmeans_dataset)
 print(dataset)
 
@@ -77,6 +81,11 @@ plt.show()
 '''
 
 # I have to get d0L1, L2... of the clusters with the most experiments (aka rows) and get their standard deviation.
+
+clusterDict = createDictAndUpdateTable(dataset, 'Cluster')		# Because some clusters have a negative index (OPTICS algorithm)
+numClusters = len(clusterDict)
+print("there are " + str(len(clusterDict)) + " clusters")
+
 
 clusterCount = {}	  # key:value --> cluster:numRows, meaning how many rows each cluster has
 
@@ -133,13 +142,13 @@ for i in range(numClusters):
 	yc.append(sum(tempListY) / clusterCount[i])
 	zc.append(sum(tempListZ) / clusterCount[i])
 
-print("xc: " + str(xc))
+#print("xc: " + str(xc))
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.set_xlabel('Temperature (K)')
 ax.set_ylabel('Pressure (Bar)')
 ax.set_zlabel('Phi')
-ax.scatter(x, y, z, c=dataset['Cluster'], alpha=0.1)
-ax.scatter(xc, yc, zc, c='red', s=50, alpha=1)
+ax.scatter(x, y, z, c=dataset['Cluster'], alpha=0.2, linewidths=0)
+ax.scatter(xc, yc, zc, c='red', s=30, alpha=1)
 #ax.scatter([10, 20], [10, 20], [10, 20], c='red', s=50)
 plt.show()
