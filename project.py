@@ -5,9 +5,9 @@ from matplotlib.colors import ListedColormap
 from mpl_toolkits.mplot3d import Axes3D
 from pathlib import Path
 
-pandas.set_option('display.max_rows', None)
-
 #TODO: only use kmeans_dataset instead of mixing dataset and kmeans_dataset
+#TODO: add main function
+#TODO: parse command line arguments (clustering, fuel type...)
 
 def calculateAvg(dataset, column):
 
@@ -43,17 +43,30 @@ def createDictAndUpdateTable(dataset, column):
 	
 	return newDict
 
-original_dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl')
+def filterDataset(dataset, column, value):		# Deletes all rows that don't have a specific value of a column. Used for filtering by fuel type
+	
+	newDataset = dataset
 
-dataset = original_dataset.drop(original_dataset.columns[[0,1,3,4]], axis=1)		# Removes the useless columns
+	for i in range(dataset.shape[0]):
+		if dataset[column].iloc[i] != value:
+			newDataset = newDataset.drop([i])
+			i += 1
+
+	#newDataset = dataset.drop(column, 1)	# Deletes the column to filter by
+	
+	return newDataset
+
+original_dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl')
+dataset = original_dataset.drop(original_dataset.columns[[0,1,3,4]], axis=1)		# Removes the useless columns (TODO: drop by name instead of index)
 
 print("There are " + str(dataset.shape[0]) + " rows in the dataset")
 
 
 # I should do this for each "weird" column... hardcode or find a way to create every dict automatically from the dataset?
+dataset = filterDataset(dataset, "Fuels", "['C6H6']")
+print("There are " + str(dataset.shape[0]) + " rows in the dataset")
 
 kmeans_dataset = dataset.drop(dataset.columns[[0,2,8,9,14]], axis=1)		# Removes the columns on which I don't want to perform Kmeans
-
 
 fuelsDict = createDictAndUpdateTable(kmeans_dataset, "Fuels")  # So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
 targetDict = createDictAndUpdateTable(kmeans_dataset, "Target")
@@ -66,8 +79,8 @@ calculateAvg(kmeans_dataset, "Temperature (K)")
 print(kmeans_dataset)
 kmeans_clusters = 20		# TODO: pass argument from command line
 
-#cluster = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
-cluster = sklearn.cluster.OPTICS()
+cluster = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
+#cluster = sklearn.cluster.OPTICS()
 #cluster = sklearn.cluster.AffinityPropagation()
 
 dataset["Cluster"] = cluster.fit_predict(kmeans_dataset)
