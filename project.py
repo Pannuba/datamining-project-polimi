@@ -1,8 +1,5 @@
-import openpyxl, pandas, sklearn, seaborn, math, statistics
+import openpyxl, pandas, sklearn, math, statistics, plotly.express
 from sklearn.cluster import kmeans_plusplus, KMeans
-import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
-from mpl_toolkits.mplot3d import Axes3D
 from pathlib import Path
 
 #TODO: only use kmeans_dataset instead of mixing dataset and kmeans_dataset
@@ -78,6 +75,10 @@ def main():
 	calculateAvg(kmeans_dataset, "Pressure (Bar)")
 	calculateAvg(kmeans_dataset, "Temperature (K)")
 
+	calculateAvg(dataset, "Phi")
+	calculateAvg(dataset, "Pressure (Bar)")		# Also update the main dataset with the average values for phi, P and T
+	calculateAvg(dataset, "Temperature (K)")
+
 	print(kmeans_dataset)
 	kmeans_clusters = 20		# TODO: pass argument from command line
 
@@ -118,7 +119,6 @@ def main():
 	# clusterCount is "sorted" by key/cluster number, so clusterCount[3][1] gives the number of rows in the third cluster.
 	# clusterCountDesc is "sorted" based on value, in descending order. So the first key (cluster #) is the one with the most rows
 
-	print(clusterCount)
 	clusterCountDesc = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
 	print(clusterCountDesc)
 	biggestCluster = clusterCountDesc[0][0]
@@ -157,15 +157,8 @@ def main():
 		yc.append(sum(tempListY) / clusterCount[i])
 		zc.append(sum(tempListZ) / clusterCount[i])
 
-	#print("xc: " + str(xc))
-	fig = plt.figure()
-	ax = fig.add_subplot(111, projection='3d')
-	ax.set_xlabel('Temperature (K)')
-	ax.set_ylabel('Pressure (Bar)')
-	ax.set_zlabel('Phi')
-	ax.scatter(x, y, z, c=dataset['Cluster'], alpha=0.2, linewidths=0)
-	ax.scatter(xc, yc, zc, c='red', s=30, alpha=1)
-	#ax.scatter([10, 20], [10, 20], [10, 20], c='red', s=50)
+	plt = plotly.express.scatter_3d(dataset, x='Temperature (K)', y='Pressure (Bar)', z='Phi', color='Cluster')
+	
 	plt.show()
 
 
