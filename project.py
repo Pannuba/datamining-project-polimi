@@ -5,6 +5,8 @@ from pathlib import Path
 #TODO: only use kmeans_dataset instead of mixing dataset and kmeans_dataset
 #TODO: parse command line arguments (clustering, fuel type...)
 
+#TODO
+
 def calculateAvg(dataset, column):
 
 	for i in range(dataset.shape[0]):
@@ -18,7 +20,7 @@ def getStdDevOfColInCluster(dataset, clusterNumber, column):		# For the "convert
 	newList = []
 
 	for i in range(dataset.shape[0]):
-		if dataset["Cluster"].iloc[i] == clusterNumber:
+		if dataset["ClusterID"].iloc[i] == clusterNumber:
 			newList.append(dataset[column].iloc[i])
 	
 	return statistics.stdev(newList)
@@ -86,7 +88,15 @@ def main():
 	#cluster = sklearn.cluster.OPTICS()
 	#cluster = sklearn.cluster.AffinityPropagation()
 
-	dataset["Cluster"] = cluster.fit_predict(kmeans_dataset)
+	dataset["ClusterID"] = cluster.fit_predict(kmeans_dataset)
+
+	clusterName = []
+
+	for i in range(dataset.shape[0]):
+		clusterName.append("C" + str(dataset["ClusterID"].iloc[i]))
+	
+	dataset["Cluster"] = clusterName
+
 	print(dataset)
 
 	'''
@@ -98,7 +108,7 @@ def main():
 
 	# I have to get d0L1, L2... of the clusters with the most experiments (aka rows) and get their standard deviation.
 
-	clusterDict = createDictAndUpdateTable(dataset, 'Cluster')		# Because some clusters have a negative index (OPTICS algorithm)
+	clusterDict = createDictAndUpdateTable(dataset, 'ClusterID')		# Because some clusters have a negative index (OPTICS algorithm)
 	numClusters = len(clusterDict)
 	print("there are " + str(len(clusterDict)) + " clusters")
 
@@ -111,7 +121,7 @@ def main():
 
 		for j in range(dataset.shape[0]):
 
-			if dataset["Cluster"].iloc[j] == i:
+			if dataset["ClusterID"].iloc[j] == i:
 				count += 1
 		
 		clusterCount[i] = count
@@ -132,10 +142,6 @@ def main():
 
 	# Prepare 3d plot and then show it
 
-	x = [float(i) for i in kmeans_dataset['Temperature (K)']]
-	y = [float(i) for i in kmeans_dataset['Pressure (Bar)']]
-	z = [float(i) for i in kmeans_dataset['Phi']]
-
 	xc = []
 	yc = []
 	zc = []
@@ -148,7 +154,7 @@ def main():
 
 		for j in range(dataset.shape[0]):
 
-			if dataset["Cluster"].iloc[j] == i:
+			if dataset["ClusterID"].iloc[j] == i:
 				tempListX.append(kmeans_dataset["Temperature (K)"].iloc[j])
 				tempListY.append(kmeans_dataset["Pressure (Bar)"].iloc[j])
 				tempListZ.append(kmeans_dataset["Phi"].iloc[j])
@@ -157,8 +163,8 @@ def main():
 		yc.append(sum(tempListY) / clusterCount[i])
 		zc.append(sum(tempListZ) / clusterCount[i])
 
-	plt = plotly.express.scatter_3d(dataset, x='Temperature (K)', y='Pressure (Bar)', z='Phi', color='Cluster')
-	
+	plt = plotly.express.scatter_3d(dataset, x='Temperature (K)', y='Pressure (Bar)', z='Phi', color="Cluster")
+	plt.update_traces(marker={'size':3}) # :3
 	plt.show()
 
 
