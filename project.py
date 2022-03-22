@@ -5,8 +5,6 @@ from pathlib import Path
 #TODO: only use kmeans_dataset instead of mixing dataset and kmeans_dataset
 #TODO: parse command line arguments (clustering, fuel type...)
 
-#TODO
-
 def calculateAvg(dataset, column):
 
 	for i in range(dataset.shape[0]):
@@ -32,10 +30,12 @@ def createDictAndUpdateTable(dataset, column):
 	j = 0
 
 	for i in range(dataset.shape[0]):
-		if dataset[column].iloc[i] not in newDict:
+		if dataset[column].iloc[i] not in newDict.values():
 			newDict[j] = dataset[column].iloc[i]
 			dataset[column].iloc[i] = j
 			j += 1
+		else:
+			dataset[column].iloc[i] = j
 	
 	return newDict
 
@@ -98,13 +98,6 @@ def main():
 
 	print(dataset)
 
-	'''
-	reduced_data = sklearn.decomposition.PCA(n_components=2).fit_transform(kmeans_dataset)
-	results = pandas.DataFrame(reduced_data,columns=['pca1','pca2'])
-	seaborn.scatterplot(x="pca1", y="pca2", hue=dataset['Cluster'], data=results)
-	plt.show()
-	'''
-
 	# I have to get d0L1, L2... of the clusters with the most experiments (aka rows) and get their standard deviation.
 
 	clusterDict = createDictAndUpdateTable(dataset, 'ClusterID')		# Because some clusters have a negative index (OPTICS algorithm)
@@ -140,8 +133,14 @@ def main():
 		print("stdDev(d1Pe) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd1Pe')) + '\n')
 
 	testDf = dataset.groupby("Fuels")
-	print(testDf.get_group(fuelsDict.get(0)))
-
+	print(fuelsDict)
+	#print(testDf.get_group(fuelsDict.get(0)))
+	'''for i in range(testDf.ngroups):		# For each fuel type
+		print("stdDev(d0L2) for" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd0L2')))
+		print("stdDev(d1L2) for" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd1L2')))
+		print("stdDev(d0Pe) for" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd0Pe')))		# For cycle, print the standard deviation of the top x clusters?
+		print("stdDev(d1Pe) for" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd1Pe')) + '\n')
+'''
 
 	# Prepare 3d plot and then show it
 
