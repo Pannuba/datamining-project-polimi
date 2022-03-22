@@ -28,16 +28,14 @@ def getStdDevOfColInCluster(dataset, clusterNumber, column):		# For the "convert
 
 def createDictAndUpdateTable(dataset, column):
 
-	newDict = {}			# key:value --> "C6H6":2
+	newDict = {}			# key:value --> 2:"C6H6"
 	j = 0
 
 	for i in range(dataset.shape[0]):
 		if dataset[column].iloc[i] not in newDict:
-			newDict[dataset[column].iloc[i]] = j
+			newDict[j] = dataset[column].iloc[i]
+			dataset[column].iloc[i] = j
 			j += 1
-	
-	for i in range(dataset.shape[0]):
-		dataset[column].iloc[i] = newDict[dataset[column].iloc[i]]
 	
 	return newDict
 
@@ -60,6 +58,7 @@ def main():
 	original_dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl')
 	dataset = original_dataset.drop(original_dataset.columns[[0,1,3,4]], axis=1)		# Removes the useless columns (TODO: drop by name instead of index)
 
+	#dataset = sklearn.utils.shuffle(dataset)
 	print("There are " + str(dataset.shape[0]) + " rows in the dataset")
 
 
@@ -139,6 +138,10 @@ def main():
 		print("stdDev(d1L2) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd1L2')))
 		print("stdDev(d0Pe) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd0Pe')))		# For cycle, print the standard deviation of the top x clusters?
 		print("stdDev(d1Pe) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd1Pe')) + '\n')
+
+	testDf = dataset.groupby("Fuels")
+	print(testDf.get_group(fuelsDict.get(0)))
+
 
 	# Prepare 3d plot and then show it
 
