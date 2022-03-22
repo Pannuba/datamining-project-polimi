@@ -132,16 +132,14 @@ def main():
 		print("stdDev(d0Pe) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd0Pe')))		# For cycle, print the standard deviation of the top x clusters?
 		print("stdDev(d1Pe) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd1Pe')) + '\n')
 
-	testDf = dataset.groupby("Fuels")
+	fuelsDf = dataset.groupby("Fuels")
 	print(fuelsDict)
 	#print(testDf.get_group(fuelsDict.get(0)))
-	'''for i in range(testDf.ngroups):		# For each fuel type
-		print("stdDev(d0L2) for" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd0L2')))
-		print("stdDev(d1L2) for" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd1L2')))
-		print("stdDev(d0Pe) for" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd0Pe')))		# For cycle, print the standard deviation of the top x clusters?
-		print("stdDev(d1Pe) for" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd1Pe')) + '\n')
-'''
-
+	for i in range(fuelsDf.ngroups):		# For each fuel type
+		print("stdDev(d0L2) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d0L2'].std()))
+		print("stdDev(d1L2) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d1L2'].std()))
+		print("stdDev(d0Pe) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d0Pe'].std()))
+		print("stdDev(d1Pe) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d1Pe'].std()))
 	# Prepare 3d plot and then show it
 
 	xc = []
