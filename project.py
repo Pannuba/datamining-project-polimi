@@ -43,10 +43,7 @@ def createDict(dataset, column):		#TODO: make separate functions(?)
 	for i in range(dataset.shape[0]):
 		if dataset[column].iloc[i] not in newDict.values():
 			newDict[j] = dataset[column].iloc[i]
-			#dataset[column].iloc[i] = j
 			j += 1
-		#else:
-			#dataset[column].iloc[i] = j
 	
 	return newDict
 
@@ -76,13 +73,9 @@ def main():
 	original_dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl')
 	dataset = original_dataset.drop(original_dataset.columns[[0,1,3,4]], axis=1)		# Removes the useless columns (TODO: drop by name instead of index)
 
-	#dataset = sklearn.utils.shuffle(dataset)
-	print("There are " + str(dataset.shape[0]) + " rows in the dataset")
-
-
-	# I should do this for each "weird" column... hardcode or find a way to create every dict automatically from the dataset?
-	#dataset = filterDataset(dataset, "Fuels", "['C6H6']")
-	print("There are " + str(dataset.shape[0]) + " rows in the dataset")
+	calculateAvg(dataset, "Phi")			#TODO: do calculateAvg first, then create kmeans_dataset? To avoid doing calculateAvg on kmeans_dataset too
+	calculateAvg(dataset, "Pressure (Bar)")		# Also update the main dataset with the average values for phi, P and T
+	calculateAvg(dataset, "Temperature (K)")
 
 	kmeans_dataset = dataset.drop(dataset.columns[[0,2,8,9,14]], axis=1)		# Removes the columns on which I don't want to perform Kmeans
 
@@ -93,14 +86,6 @@ def main():
 	updateTableFromDict(kmeans_dataset, "Fuels", fuelsDict)
 	updateTableFromDict(kmeans_dataset, "Target", targetDict)
 	updateTableFromDict(kmeans_dataset, "Experiment Type", expTypeDict)
-
-	calculateAvg(kmeans_dataset, "Phi")
-	calculateAvg(kmeans_dataset, "Pressure (Bar)")
-	calculateAvg(kmeans_dataset, "Temperature (K)")
-
-	calculateAvg(dataset, "Phi")			#TODO: do calculateAvg first, then create kmeans_dataset? To avoid doing calculateAvg on kmeans_dataset too
-	calculateAvg(dataset, "Pressure (Bar)")		# Also update the main dataset with the average values for phi, P and T
-	calculateAvg(dataset, "Temperature (K)")
 	
 	print(kmeans_dataset)
 	kmeans_clusters = 20		# TODO: pass argument from command line
@@ -145,8 +130,6 @@ def main():
 	print(dataset)
 	clusterCountDesc = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
 	print(clusterCountDesc)
-	biggestCluster = clusterCountDesc[0][0]
-	print(str(biggestCluster) + " is the cluster with the most elements")
 
 	'''for i in range(4):
 		filteredDataset = filterDataset(dataset, 'ClusterID', clusterCountDesc[i][0])		# filteredDataset only has the top 4 clusters
@@ -159,17 +142,8 @@ def main():
 	clusterDf = dataset.groupby("ClusterID")
 	print(clusterDf.get_group(0))		# Prints all lines containing cluster 0
 
-	#for i in range(4):
-	#	print("stdDev(d0L2) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd0L2')))
-	#	print("stdDev(d1L2) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd1L2')))
-	#	print("stdDev(d0Pe) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd0Pe')))		# For cycle, print the standard deviation of the top x clusters?
-	#	print("stdDev(d1Pe) in cluster #" + str(clusterCountDesc[i][0]) + " (" + str(clusterCountDesc[i][1]) + " rows) = " + str(getStdDevOfColInCluster(dataset, clusterCountDesc[i][0], 'd1Pe')) + '\n')
-
-	'''for i in range(3):
-		print("stdDev(d0L2) in cluster #" + str(clusterCountDesc[i][0]) + ": " + str(clusterDf.get_group(int(clusterCountDesc[i][0])))['d0L2'].std())
-		print("stdDev(d1L2) in cluster #" + str(clusterCountDesc[i][0]) + ": " + str(clusterDf.get_group(int(clusterCountDesc[i][0])))['d1L2'].std())
-		print("stdDev(d0Pe) in cluster #" + str(clusterCountDesc[i][0]) + ": " + str(clusterDf.get_group(int(clusterCountDesc[i][0])))['d0Pe'].std())
-		print("stdDev(d1Pe) in cluster #" + str(clusterCountDesc[i][0]) + ": " + str(clusterDf.get_group(int(clusterCountDesc[i][0])))['d1Pe'].std() + '\n')'''
+	for i in range(3):
+		print("stdDev(d0L2) in cluster #" + str(clusterCountDesc[i][0]) + ": " + str(clusterDf.get_group(int(clusterCountDesc[i][0]))['d0L2'].std()))
 
 	fuelsDf = dataset.groupby("Fuels")
 	print(fuelsDict.get(1))
