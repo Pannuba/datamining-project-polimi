@@ -66,13 +66,13 @@ def filterDataset(dataset, column, value):		# Deletes all rows that don't have a
 	
 	return newDataset
 
-def keepTopNClusters(dataset, n, clusterCountDesc):		# ClusterCountDesc: {[#cluster : #rows], ...}, clusterCountDesc[i][0] gives the cluster number, [i][1] the number of rows for cluster #i
+def keepTopNClusters(dataset, n, topClustersDict):		# topClustersDict: {[#cluster : #rows], ...}, topClustersDict[i][0] gives the cluster number, [i][1] the number of rows for cluster #i
 	
 	newDataset = dataset
 	topClusters = []
 
 	for i in range(n):
-		topClusters.append(clusterCountDesc[i][0])
+		topClusters.append(topClustersDict[i][0])
 
 	for i in range(dataset.shape[0]):
 		if dataset['ClusterID'].iloc[i] not in topClusters:
@@ -85,7 +85,7 @@ def main():
 	original_dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl')
 	dataset = original_dataset.drop(original_dataset.columns[[0,1,3,4]], axis=1)		# Removes the useless columns (TODO: drop by name instead of index)
 
-	calculateAvg(dataset, "Phi")			#TODO: do calculateAvg first, then create kmeans_dataset? To avoid doing calculateAvg on kmeans_dataset too
+	calculateAvg(dataset, "Phi")
 	calculateAvg(dataset, "Pressure (Bar)")		# Also update the main dataset with the average values for phi, P and T
 	calculateAvg(dataset, "Temperature (K)")
 
@@ -138,25 +138,23 @@ def main():
 		clusterCount[i] = count
 
 	# clusterCount is "sorted" by key/cluster number, so clusterCount[3][1] gives the number of rows in the third cluster.
-	# clusterCountDesc is "sorted" based on value, in descending order. So the first key (cluster #) is the one with the most rows
-	print(dataset)
-	clusterCountDesc = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)			#TODO: rename clusterCountDesc to clusterCount, or clusterDict? I don't think I use clusterDict anywhere...
-	print(clusterCountDesc)
+	# topClustersDict is "sorted" based on value, in descending order. So the first key (cluster #) is the one with the most rows
+	
+	topClustersDict = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)			#TODO: rename topClustersDict to clusterCount, or clusterDict? I don't think I use clusterDict anywhere...
+	print(topClustersDict)
 
-	filteredDataset = keepTopNClusters(dataset, 4, clusterCountDesc)
+	filteredDataset = keepTopNClusters(dataset, 4, topClustersDict)
 
-	print("begin filteredDataset")
 	print(filteredDataset)		#TODO: actually use the filtered dataset for plotting and other stuff
-	print("end")
 
 
-	clusterDf = dataset.groupby("ClusterID")
+	clusterDf = filteredDataset.groupby("ClusterID")
 	print(clusterDf.get_group(0))		# Prints all lines containing cluster 0
 
 	for i in range(4):
-		print("stdDev(d0L2) in cluster #" + str(clusterCountDesc[i][0]) + ": " + str(clusterDf.get_group(int(clusterCountDesc[i][0]))['d0L2'].std()))
+		print("stdDev(d0L2) in cluster #" + str(topClustersDict[i][0]) + ": " + str(clusterDf.get_group(int(topClustersDict[i][0]))['d0L2'].std()))
 
-	fuelsDf = dataset.groupby("Fuels")
+	fuelsDf = filteredDataset.groupby("Fuels")
 
 	'''print(fuelsDict.get(1))
 	print(fuelsDf.get_group('[\'C10H7CH3\']'))
@@ -168,7 +166,6 @@ def main():
 	'''
 
 	# Prepare 3d plot and then show it
-	print(dataset)
 
 	xc = []
 	yc = []
@@ -180,7 +177,7 @@ def main():
 		tempListY = []
 		tempListZ = []
 
-		for j in range(dataset.shape[0]):
+		for j in range(filteredDataset.shape[0]):
 
 			if dataset["ClusterID"].iloc[j] == i:
 				tempListX.append(kmeans_dataset["Temperature (K)"].iloc[j])
@@ -195,7 +192,7 @@ def main():
 
 	#trace1 = plotly.graph_objs.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(color='green'))
 	#trace2 = plotly.graph_objs.Scatter3d(x=dataset['Temperature (K)'], y=dataset['Pressure (Bar)'], z=dataset['Phi'], mode='markers')
-	plt = plotly.express.scatter_3d(dataset, x='Temperature (K)', y='Pressure (Bar)', z='Phi', color="Cluster")
+	plt = plotly.express.scatter_3d(filteredDataset, x='Temperature (K)', y='Pressure (Bar)', z='Phi', color="Cluster")
 	#plt = plotly.graph_objs.Figure(data=[trace1, trace2])
 	plt.update_traces(marker={'size':3})
 	plt.show()
