@@ -4,7 +4,6 @@ from pathlib import Path
 
 #TODO: only use kmeans_dataset instead of mixing dataset and kmeans_dataset
 #TODO: parse command line arguments (clustering, fuel type...)
-#TODO: make dataframe for top 5 clusters
 #TODO: use plotly.go to show centroids :thumbsup:
 
 def calculateAvg(dataset, column):
@@ -62,11 +61,24 @@ def filterDataset(dataset, column, value):		# Deletes all rows that don't have a
 		if dataset[column].iloc[i] != value:
 			newDataset = newDataset.drop([i])
 			i += 1
-
+	
 	#newDataset = dataset.drop(column, 1)	# Deletes the column to filter by
 	
 	return newDataset
 
+def keepTopNClusters(dataset, n, clusterCountDesc):		# ClusterCountDesc: {[#cluster : #rows], ...}, clusterCountDesc[i][0] gives the cluster number, [i][1] the number of rows for cluster #i
+	
+	newDataset = dataset
+	topClusters = []
+
+	for i in range(n):
+		topClusters.append(clusterCountDesc[i][0])
+
+	for i in range(dataset.shape[0]):
+		if dataset['ClusterID'].iloc[i] not in topClusters:
+			newDataset = newDataset.drop([i])
+	
+	return newDataset
 
 def main():
 
@@ -128,32 +140,33 @@ def main():
 	# clusterCount is "sorted" by key/cluster number, so clusterCount[3][1] gives the number of rows in the third cluster.
 	# clusterCountDesc is "sorted" based on value, in descending order. So the first key (cluster #) is the one with the most rows
 	print(dataset)
-	clusterCountDesc = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
+	clusterCountDesc = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)			#TODO: rename clusterCountDesc to clusterCount, or clusterDict? I don't think I use clusterDict anywhere...
 	print(clusterCountDesc)
 
-	'''for i in range(4):
-		filteredDataset = filterDataset(dataset, 'ClusterID', clusterCountDesc[i][0])		# filteredDataset only has the top 4 clusters
+	filteredDataset = keepTopNClusters(dataset, 4, clusterCountDesc)
 
 	print("begin filteredDataset")
-	print(filteredDataset)
-	print("end")'''
+	print(filteredDataset)		#TODO: actually use the filtered dataset for plotting and other stuff
+	print("end")
 
 
 	clusterDf = dataset.groupby("ClusterID")
 	print(clusterDf.get_group(0))		# Prints all lines containing cluster 0
 
-	for i in range(3):
+	for i in range(4):
 		print("stdDev(d0L2) in cluster #" + str(clusterCountDesc[i][0]) + ": " + str(clusterDf.get_group(int(clusterCountDesc[i][0]))['d0L2'].std()))
 
 	fuelsDf = dataset.groupby("Fuels")
-	print(fuelsDict.get(1))
+
+	'''print(fuelsDict.get(1))
 	print(fuelsDf.get_group('[\'C10H7CH3\']'))
 	for i in range(fuelsDf.ngroups):		# For each fuel type
 		print("stdDev(d0L2) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d0L2'].std()))
 		print("stdDev(d1L2) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d1L2'].std()))
 		print("stdDev(d0Pe) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d0Pe'].std()))
 		print("stdDev(d1Pe) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d1Pe'].std()) + '\n')
-	
+	'''
+
 	# Prepare 3d plot and then show it
 	print(dataset)
 
