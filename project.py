@@ -139,31 +139,27 @@ def main():
 
 	# clusterCount is "sorted" by key/cluster number, so clusterCount[3][1] gives the number of rows in the third cluster.
 	# topClustersDict is "sorted" based on value, in descending order. So the first key (cluster #) is the one with the most rows
-	
+
 	topClustersDict = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)			#TODO: rename topClustersDict to clusterCount, or clusterDict? I don't think I use clusterDict anywhere...
 	print(topClustersDict)
 
-	filteredDataset = keepTopNClusters(dataset, 4, topClustersDict)
+	topClustersNum = 5
 
-	print(filteredDataset)		#TODO: actually use the filtered dataset for plotting and other stuff
+	filteredDataset = keepTopNClusters(dataset, topClustersNum, topClustersDict)
 
+	print(filteredDataset)
 
 	clusterDf = filteredDataset.groupby("ClusterID")
 	print(clusterDf.get_group(0))		# Prints all lines containing cluster 0
 
-	for i in range(4):
+	for i in range(topClustersNum):
 		print("stdDev(d0L2) in cluster #" + str(topClustersDict[i][0]) + ": " + str(clusterDf.get_group(int(topClustersDict[i][0]))['d0L2'].std()))
 
 	fuelsDf = filteredDataset.groupby("Fuels")
 
-	'''print(fuelsDict.get(1))
-	print(fuelsDf.get_group('[\'C10H7CH3\']'))
-	for i in range(fuelsDf.ngroups):		# For each fuel type
-		print("stdDev(d0L2) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d0L2'].std()))
-		print("stdDev(d1L2) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d1L2'].std()))
-		print("stdDev(d0Pe) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d0Pe'].std()))
-		print("stdDev(d1Pe) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d1Pe'].std()) + '\n')
 	'''
+	print(fuelsDict.get(1))			print(fuelsDf.get_group('[\'C10H7CH3\']'))			for i in range(fuelsDf.ngroups):		# For each fuel type
+	print("stdDev(d0L2) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d0L2'].std()))	'''
 
 	# Prepare 3d plot and then show it
 
@@ -171,7 +167,7 @@ def main():
 	yc = []
 	zc = []
 
-	for i in range(numClusters):
+	for i in range(topClustersNum):			#TODO: this keeps account of all clusters, I only care about the top n clusters!
 
 		tempListX = []
 		tempListY = []
@@ -179,7 +175,7 @@ def main():
 
 		for j in range(filteredDataset.shape[0]):
 
-			if dataset["ClusterID"].iloc[j] == i:
+			if filteredDataset["ClusterID"].iloc[j] == i:
 				tempListX.append(kmeans_dataset["Temperature (K)"].iloc[j])
 				tempListY.append(kmeans_dataset["Pressure (Bar)"].iloc[j])
 				tempListZ.append(kmeans_dataset["Phi"].iloc[j])
