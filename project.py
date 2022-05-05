@@ -1,10 +1,12 @@
-import openpyxl, pandas, sklearn, math, statistics, plotly.express, plotly.graph_objs, plotly
+import openpyxl, pandas, sklearn, math, statistics, plotly.express, plotly.graph_objs as go, plotly
 from sklearn.cluster import kmeans_plusplus, KMeans
 from pathlib import Path
 
-#TODO: only use kmeans_dataset instead of mixing dataset and kmeans_dataset
+pandas.set_option('display.max_rows', None)
+
+#TODO: compare models using the calculated standard deviations
+#TODO: use plotly.go to show centroids
 #TODO: parse command line arguments (clustering, fuel type...)
-#TODO: use plotly.go to show centroids :thumbsup:
 
 def calculateAvg(dataset, column):
 
@@ -34,7 +36,7 @@ def getStdDevOfColInCluster(dataset, clusterNumber, column):		# For the "convert
 	return statistics.stdev(newList)
 
 
-def createDict(dataset, column):		#TODO: make separate functions(?)
+def createDict(dataset, column):
 
 	newDict = {}			# key:value --> 2:"C6H6"
 	j = 0
@@ -137,20 +139,20 @@ def main():
 		
 		clusterCount[i] = count
 
-	# clusterCount is "sorted" by key/cluster number, so clusterCount[3][1] gives the number of rows in the third cluster.
+	# clusterCount is "sorted" by key/cluster number, so clusterCount[3] gives the number of rows in the third cluster.
 	# topClustersDict is "sorted" based on value, in descending order. So the first key (cluster #) is the one with the most rows
 
 	topClustersDict = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)			#TODO: rename topClustersDict to clusterCount, or clusterDict? I don't think I use clusterDict anywhere...
 	print(topClustersDict)
 
-	topClustersNum = 5
+	topClustersNum = 2
 
 	filteredDataset = keepTopNClusters(dataset, topClustersNum, topClustersDict)
 
 	print(filteredDataset)
 
 	clusterDf = filteredDataset.groupby("ClusterID")
-	print(clusterDf.get_group(0))		# Prints all lines containing cluster 0
+	#print(clusterDf.get_group(0))		# Prints all lines containing cluster 0
 
 	for i in range(topClustersNum):
 		print("stdDev(d0L2) in cluster #" + str(topClustersDict[i][0]) + ": " + str(clusterDf.get_group(int(topClustersDict[i][0]))['d0L2'].std()))
@@ -166,31 +168,34 @@ def main():
 	xc = []
 	yc = []
 	zc = []
+	print("clustercount[2] = " + str(clusterCount[2]))
 
-	for i in range(topClustersNum):			#TODO: this keeps account of all clusters, I only care about the top n clusters!
+	for i in range(topClustersNum):
 
 		tempListX = []
 		tempListY = []
 		tempListZ = []
 
 		for j in range(filteredDataset.shape[0]):
-
-			if filteredDataset["ClusterID"].iloc[j] == i:
-				tempListX.append(kmeans_dataset["Temperature (K)"].iloc[j])
-				tempListY.append(kmeans_dataset["Pressure (Bar)"].iloc[j])
-				tempListZ.append(kmeans_dataset["Phi"].iloc[j])
+			
+			#print("is " + str(filteredDataset["ClusterID"].iloc[j]) + " = " + str(topClustersDict[i][0]) + "?")
+			print(clusterCount[i])
+			if filteredDataset["ClusterID"].iloc[j] == topClustersDict[i][0]:
+				tempListX.append(filteredDataset["Temperature (K)"].iloc[j])		# Used to be kmeans_dataset, but both kmeans_ds and ds/filtered_ds have the same temp/pressure/phi values
+				tempListY.append(filteredDataset["Pressure (Bar)"].iloc[j])
+				tempListZ.append(filteredDataset["Phi"].iloc[j])
 		
-		xc.append(sum(tempListX) / clusterCount[i])
-		yc.append(sum(tempListY) / clusterCount[i])
-		zc.append(sum(tempListZ) / clusterCount[i])
+		xc.append(sum(tempListX) / topClustersDict[i][1])
+		yc.append(sum(tempListY) / topClustersDict[i][1])
+		zc.append(sum(tempListZ) / topClustersDict[i][1])
+	
+	print("xc: ", xc)
 
-	#TODO: make dataset with only the top 4 clusters
-
-	#trace1 = plotly.graph_objs.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(color='green'))
-	#trace2 = plotly.graph_objs.Scatter3d(x=dataset['Temperature (K)'], y=dataset['Pressure (Bar)'], z=dataset['Phi'], mode='markers')
-	plt = plotly.express.scatter_3d(filteredDataset, x='Temperature (K)', y='Pressure (Bar)', z='Phi', color="Cluster")
-	#plt = plotly.graph_objs.Figure(data=[trace1, trace2])
-	plt.update_traces(marker={'size':3})
+	trace1 = go.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(size=5, color='red'))
+	trace2 = go.Scatter3d(x=filteredDataset['Temperature (K)'], y=filteredDataset['Pressure (Bar)'], z=filteredDataset['Phi'], mode='markers', marker=dict(size=2, color=filteredDataset['ClusterID']))
+	#plt = plotly.express.scatter_3d(filteredDataset, x='Temperature (K)', y='Pressure (Bar)', z='Phi', color="Cluster")
+	plt = plotly.graph_objs.Figure(data=[trace1, trace2])
+	#plt.update_traces(marker={'size':3})
 	plt.show()
 
 
