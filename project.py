@@ -84,6 +84,9 @@ def keepTopNClusters(dataset, n, topClustersDict):		# topClustersDict: {[#cluste
 
 def main():
 
+	kmeans_clusters = 15		# TODO: pass argument from command line
+	topClustersNum = 5
+
 	original_dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl')
 	dataset = original_dataset.drop(original_dataset.columns[[0,1,3,4]], axis=1)		# Removes the useless columns (TODO: drop by name instead of index)
 
@@ -102,7 +105,6 @@ def main():
 	updateTableFromDict(kmeans_dataset, "Experiment Type", expTypeDict)
 	
 	print(kmeans_dataset)
-	kmeans_clusters = 20		# TODO: pass argument from command line
 
 	cluster = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
 	#cluster = sklearn.cluster.OPTICS()
@@ -144,8 +146,6 @@ def main():
 
 	topClustersDict = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)			#TODO: rename topClustersDict to clusterCount, or clusterDict? I don't think I use clusterDict anywhere...
 	print(topClustersDict)
-
-	topClustersNum = 5
 
 	filteredDataset = keepTopNClusters(dataset, topClustersNum, topClustersDict)
 
@@ -189,13 +189,16 @@ def main():
 	
 	plt = go.Figure()
 	trace1 = go.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(size=5, color='red'), name="Centroids")
-	trace2 = go.Scatter3d(	x=filteredDataset['Temperature (K)'], y=filteredDataset['Pressure (Bar)'], z=filteredDataset['Phi'],
-							mode='markers', marker=dict(size=2, color=filteredDataset['ClusterID']), name="Experiments")
+	
+	for i in range(topClustersNum):
+		tempDf = clusterDf.get_group(topClustersDict[i][0])
+		plt.add_trace(go.Scatter3d(	x=tempDf['Temperature (K)'], y=tempDf['Pressure (Bar)'], z=tempDf['Phi'],
+									mode='markers', marker=dict(size=2, color=topClustersDict[i][0]), name=("Cluster "+str(topClustersDict[i][0]))))
+	
 	#plt = plotly.express.scatter_3d(filteredDataset, x='Temperature (K)', y='Pressure (Bar)', z='Phi', color="Cluster")
 	plt.add_trace(trace1)
-	plt.add_trace(trace2)
 	plt.update_layout(scene = dict(xaxis_title="Temperature (K)", yaxis_title="Pressure (Bar)", zaxis_title="Phi"), title="Model", legend_title="Legend")
-	#plt.update_traces(marker={'size':3})
+	plt.update_traces(selector=dict(mode='markers'))
 	plt.show()
 
 
