@@ -5,7 +5,6 @@ from pathlib import Path
 pandas.set_option('display.max_rows', None)
 
 #TODO: compare models using the calculated standard deviations
-#TODO: use plotly.go to show centroids
 #TODO: parse command line arguments (clustering, fuel type...)
 
 def calculateAvg(dataset, column):
@@ -82,6 +81,44 @@ def keepTopNClusters(dataset, n, topClustersDict):		# topClustersDict: {[#cluste
 	
 	return newDataset
 
+def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d scatterplot and then show it
+	
+	xc = []
+	yc = []
+	zc = []
+
+	for i in range(topClustersNum):
+
+		tempListX = []
+		tempListY = []
+		tempListZ = []
+
+		for j in range(dataset.shape[0]):
+			
+			if dataset["ClusterID"].iloc[j] == topClustersDict[i][0]:
+				tempListX.append(dataset["Temperature (K)"].iloc[j])		# Used to be kmeans_dataset, but both kmeans_ds and ds/filtered_ds have the same temp/pressure/phi values
+				tempListY.append(dataset["Pressure (Bar)"].iloc[j])
+				tempListZ.append(dataset["Phi"].iloc[j])
+		
+		xc.append(sum(tempListX) / topClustersDict[i][1])
+		yc.append(sum(tempListY) / topClustersDict[i][1])
+		zc.append(sum(tempListZ) / topClustersDict[i][1])
+	
+	plt = go.Figure()
+	trace1 = go.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(size=5, color='red'), name="Centroids")
+	
+	for i in range(topClustersNum):
+		tempDf = clusterDf.get_group(topClustersDict[i][0])
+		plt.add_trace(go.Scatter3d(	x=tempDf['Temperature (K)'], y=tempDf['Pressure (Bar)'], z=tempDf['Phi'],
+									mode='markers', marker=dict(size=2, color=topClustersDict[i][0]), name=("Cluster "+str(topClustersDict[i][0]))))
+	
+	#plt = plotly.express.scatter_3d(filteredDataset, x='Temperature (K)', y='Pressure (Bar)', z='Phi', color="Cluster")
+	plt.add_trace(trace1)
+	plt.update_layout(scene = dict(xaxis_title="Temperature (K)", yaxis_title="Pressure (Bar)", zaxis_title="Phi"), title="Model", legend_title="Legend")
+	plt.update_traces(selector=dict(mode='markers'))
+	plt.show()
+
+
 def main():
 
 	kmeans_clusters = 15		# TODO: pass argument from command line
@@ -103,21 +140,12 @@ def main():
 	updateTableFromDict(kmeans_dataset, "Fuels", fuelsDict)
 	updateTableFromDict(kmeans_dataset, "Target", targetDict)
 	updateTableFromDict(kmeans_dataset, "Experiment Type", expTypeDict)
-	
-	print(kmeans_dataset)
 
 	cluster = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
 	#cluster = sklearn.cluster.OPTICS()
 	#cluster = sklearn.cluster.AffinityPropagation()
 
 	dataset["ClusterID"] = cluster.fit_predict(kmeans_dataset)
-
-	clusterName = []
-
-	for i in range(dataset.shape[0]):
-		clusterName.append("C" + str(dataset["ClusterID"].iloc[i]))
-	
-	dataset["Cluster"] = clusterName
 
 	print(dataset)
 
@@ -163,43 +191,7 @@ def main():
 	print(fuelsDict.get(1))			print(fuelsDf.get_group('[\'C10H7CH3\']'))			for i in range(fuelsDf.ngroups):		# For each fuel type
 	print("stdDev(d0L2) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d0L2'].std()))	'''
 
-	# Prepare 3d plot and then show it
-
-	xc = []
-	yc = []
-	zc = []
-	print("clustercount[2] = " + str(clusterCount[2]))
-
-	for i in range(topClustersNum):
-
-		tempListX = []
-		tempListY = []
-		tempListZ = []
-
-		for j in range(filteredDataset.shape[0]):
-			
-			if filteredDataset["ClusterID"].iloc[j] == topClustersDict[i][0]:
-				tempListX.append(filteredDataset["Temperature (K)"].iloc[j])		# Used to be kmeans_dataset, but both kmeans_ds and ds/filtered_ds have the same temp/pressure/phi values
-				tempListY.append(filteredDataset["Pressure (Bar)"].iloc[j])
-				tempListZ.append(filteredDataset["Phi"].iloc[j])
-		
-		xc.append(sum(tempListX) / topClustersDict[i][1])
-		yc.append(sum(tempListY) / topClustersDict[i][1])
-		zc.append(sum(tempListZ) / topClustersDict[i][1])
-	
-	plt = go.Figure()
-	trace1 = go.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(size=5, color='red'), name="Centroids")
-	
-	for i in range(topClustersNum):
-		tempDf = clusterDf.get_group(topClustersDict[i][0])
-		plt.add_trace(go.Scatter3d(	x=tempDf['Temperature (K)'], y=tempDf['Pressure (Bar)'], z=tempDf['Phi'],
-									mode='markers', marker=dict(size=2, color=topClustersDict[i][0]), name=("Cluster "+str(topClustersDict[i][0]))))
-	
-	#plt = plotly.express.scatter_3d(filteredDataset, x='Temperature (K)', y='Pressure (Bar)', z='Phi', color="Cluster")
-	plt.add_trace(trace1)
-	plt.update_layout(scene = dict(xaxis_title="Temperature (K)", yaxis_title="Pressure (Bar)", zaxis_title="Phi"), title="Model", legend_title="Legend")
-	plt.update_traces(selector=dict(mode='markers'))
-	plt.show()
+	plot(topClustersNum, filteredDataset, topClustersDict, clusterDf)
 
 
 if __name__ == '__main__':
