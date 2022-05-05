@@ -145,7 +145,7 @@ def main():
 	topClustersDict = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)			#TODO: rename topClustersDict to clusterCount, or clusterDict? I don't think I use clusterDict anywhere...
 	print(topClustersDict)
 
-	topClustersNum = 2
+	topClustersNum = 5
 
 	filteredDataset = keepTopNClusters(dataset, topClustersNum, topClustersDict)
 
@@ -178,8 +178,6 @@ def main():
 
 		for j in range(filteredDataset.shape[0]):
 			
-			#print("is " + str(filteredDataset["ClusterID"].iloc[j]) + " = " + str(topClustersDict[i][0]) + "?")
-			print(clusterCount[i])
 			if filteredDataset["ClusterID"].iloc[j] == topClustersDict[i][0]:
 				tempListX.append(filteredDataset["Temperature (K)"].iloc[j])		# Used to be kmeans_dataset, but both kmeans_ds and ds/filtered_ds have the same temp/pressure/phi values
 				tempListY.append(filteredDataset["Pressure (Bar)"].iloc[j])
@@ -189,12 +187,14 @@ def main():
 		yc.append(sum(tempListY) / topClustersDict[i][1])
 		zc.append(sum(tempListZ) / topClustersDict[i][1])
 	
-	print("xc: ", xc)
-
-	trace1 = go.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(size=5, color='red'))
-	trace2 = go.Scatter3d(x=filteredDataset['Temperature (K)'], y=filteredDataset['Pressure (Bar)'], z=filteredDataset['Phi'], mode='markers', marker=dict(size=2, color=filteredDataset['ClusterID']))
+	plt = go.Figure()
+	trace1 = go.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(size=5, color='red'), name="Centroids")
+	trace2 = go.Scatter3d(	x=filteredDataset['Temperature (K)'], y=filteredDataset['Pressure (Bar)'], z=filteredDataset['Phi'],
+							mode='markers', marker=dict(size=2, color=filteredDataset['ClusterID']), name="Experiments")
 	#plt = plotly.express.scatter_3d(filteredDataset, x='Temperature (K)', y='Pressure (Bar)', z='Phi', color="Cluster")
-	plt = plotly.graph_objs.Figure(data=[trace1, trace2])
+	plt.add_trace(trace1)
+	plt.add_trace(trace2)
+	plt.update_layout(scene = dict(xaxis_title="Temperature (K)", yaxis_title="Pressure (Bar)", zaxis_title="Phi"), title="Model", legend_title="Legend")
 	#plt.update_traces(marker={'size':3})
 	plt.show()
 
