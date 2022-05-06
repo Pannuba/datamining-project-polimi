@@ -1,8 +1,8 @@
-import openpyxl, pandas, sklearn, math, statistics, plotly.express, plotly.graph_objs as go, plotly
+import openpyxl, pandas, sklearn, math, statistics, plotly.graph_objs as go, plotly
 from sklearn.cluster import kmeans_plusplus, KMeans
 from pathlib import Path
 
-pandas.set_option('display.max_rows', None)
+#pandas.set_option('display.max_rows', None)
 
 #TODO: compare models using the calculated standard deviations
 #TODO: parse command line arguments (clustering, fuel type...)
@@ -14,7 +14,6 @@ def calculateAvg(dataset, column):
 		minmax = [float(num) for num in string.split()]  # List with the min and max value of the interval
 		dataset[column].iloc[i] = (minmax[0] + minmax[1]) / 2	 # Updates the cell with the average
 
-
 def getKeyFromValue(dictionary, value):
 	
 	for key, val in dictionary.items():
@@ -22,7 +21,6 @@ def getKeyFromValue(dictionary, value):
 			return key
 	
 	return 0
-
 
 def getStdDevOfColInCluster(dataset, clusterNumber, column):		# For the "converted" columns like Fuel, I have to pass kmeans_dataset (and thus add the Cluster column to it, too)
 
@@ -33,7 +31,6 @@ def getStdDevOfColInCluster(dataset, clusterNumber, column):		# For the "convert
 			newList.append(dataset[column].iloc[i])
 	
 	return statistics.stdev(newList)
-
 
 def createDict(dataset, column):
 
@@ -47,12 +44,10 @@ def createDict(dataset, column):
 	
 	return newDict
 
-
 def updateTableFromDict(table, column, dictionary):
-	
+
 	for i in range(table.shape[0]):
 		table[column].iloc[i] = getKeyFromValue(dictionary, table[column].iloc[i])
-
 
 def filterDataset(dataset, column, value):		# Deletes all rows that don't have a specific value of a column. Used for filtering by fuel type
 	
@@ -62,8 +57,6 @@ def filterDataset(dataset, column, value):		# Deletes all rows that don't have a
 		if dataset[column].iloc[i] != value:
 			newDataset = newDataset.drop([i])
 			i += 1
-	
-	#newDataset = dataset.drop(column, 1)	# Deletes the column to filter by
 	
 	return newDataset
 
@@ -105,19 +98,18 @@ def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d sc
 		zc.append(sum(tempListZ) / topClustersDict[i][1])
 	
 	plt = go.Figure()
-	trace1 = go.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(size=5, color='red'), name="Centroids")
-	
+	plt.add_trace(go.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(size=5, color='red'), name="Centroid"))
+
 	for i in range(topClustersNum):
 		tempDf = clusterDf.get_group(topClustersDict[i][0])
-		plt.add_trace(go.Scatter3d(	x=tempDf['Temperature (K)'], y=tempDf['Pressure (Bar)'], z=tempDf['Phi'],
-									mode='markers', marker=dict(size=2, color=topClustersDict[i][0]), name=("Cluster "+str(topClustersDict[i][0]))))
-	
-	#plt = plotly.express.scatter_3d(filteredDataset, x='Temperature (K)', y='Pressure (Bar)', z='Phi', color="Cluster")
-	plt.add_trace(trace1)
-	plt.update_layout(scene = dict(xaxis_title="Temperature (K)", yaxis_title="Pressure (Bar)", zaxis_title="Phi"), title="Model", legend_title="Legend")
-	plt.update_traces(selector=dict(mode='markers'))
-	plt.show()
+		plt.add_trace(go.Scatter3d(	x=tempDf['Temperature (K)'], y=tempDf['Pressure (Bar)'], z=tempDf['Phi'], customdata=tempDf['Fuels'], mode='markers',
+									marker=dict(size=2, color=topClustersDict[i][0]), name=("Cluster "+str(topClustersDict[i][0])),
+									hovertemplate='Temperature: %{x} K<br>Pressure: %{y} Bar<br>Phi: %{z}<br>Fuel: %{customdata}'))
 
+	# TODO: put file name in graph title, get from CLI parameter
+	plt.update_layout(scene = dict(xaxis_title="Temperature (K)", yaxis_title="Pressure (Bar)", zaxis_title="Phi"), title="Model", legend_title="Legend")
+	plt.update_traces()
+	plt.show()
 
 def main():
 
@@ -155,7 +147,6 @@ def main():
 	numClusters = len(clusterDict)
 	print("there are " + str(len(clusterDict)) + " clusters")
 
-
 	clusterCount = {}	  # key:value --> cluster:numRows, meaning how many rows each cluster has
 
 	for i in range(numClusters):
@@ -172,7 +163,7 @@ def main():
 	# clusterCount is "sorted" by key/cluster number, so clusterCount[3] gives the number of rows in the third cluster.
 	# topClustersDict is "sorted" based on value, in descending order. So the first key (cluster #) is the one with the most rows
 
-	topClustersDict = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)			#TODO: rename topClustersDict to clusterCount, or clusterDict? I don't think I use clusterDict anywhere...
+	topClustersDict = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
 	print(topClustersDict)
 
 	filteredDataset = keepTopNClusters(dataset, topClustersNum, topClustersDict)
@@ -180,18 +171,13 @@ def main():
 	print(filteredDataset)
 
 	clusterDf = filteredDataset.groupby("ClusterID")
-	#print(clusterDf.get_group(0))		# Prints all lines containing cluster 0
-
-	for i in range(topClustersNum):
-		print("stdDev(d0L2) in cluster #" + str(topClustersDict[i][0]) + ": " + str(clusterDf.get_group(int(topClustersDict[i][0]))['d0L2'].std()))
-
 	fuelsDf = filteredDataset.groupby("Fuels")
 
-	'''
-	print(fuelsDict.get(1))			print(fuelsDf.get_group('[\'C10H7CH3\']'))			for i in range(fuelsDf.ngroups):		# For each fuel type
-	print("stdDev(d0L2) for" + str(fuelsDict.get(i)) + ": " + str(fuelsDf.get_group(fuelsDict.get(i))['d0L2'].std()))	'''
-
 	plot(topClustersNum, filteredDataset, topClustersDict, clusterDf)
+
+	for i in range(topClustersNum):
+		print("std dev of Score in cluster #" + str(topClustersDict[i][0]) + ": " + str(clusterDf.get_group(int(topClustersDict[i][0]))['Score'].std()))
+
 
 
 if __name__ == '__main__':
