@@ -81,6 +81,30 @@ def keepTopNClusters(dataset, n, topClustersDict):		# topClustersDict: {[#cluste
 	return newDataset
 
 
+def findTopClusters(dataset):
+	
+	clusterDict = createDict(dataset, 'ClusterID')		# Because some clusters have a negative index (OPTICS algorithm)
+	numClusters = len(clusterDict)		# Used for other clustering algorithms
+
+	clusterCount = {}	  # key:value --> cluster:numRows, meaning how many rows each cluster has
+
+	for i in range(numClusters):
+
+		count = 0
+
+		for j in range(dataset.shape[0]):
+
+			if dataset['ClusterID'].iloc[j] == i:
+				count += 1
+		
+		clusterCount[i] = count
+
+	# clusterCount is 'sorted' by key/cluster number, so clusterCount[3] gives the number of rows in the third cluster.
+	# topClustersDict is 'sorted' based on value, in descending order. So the first key (cluster #) is the one with the most rows
+
+	return sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
+
+
 def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d scatterplot and then show it
 	
 	xc = []
@@ -147,26 +171,7 @@ def main():
 
 	print(dataset)
 
-	clusterDict = createDict(dataset, 'ClusterID')		# Because some clusters have a negative index (OPTICS algorithm)
-	numClusters = len(clusterDict)
-
-	clusterCount = {}	  # key:value --> cluster:numRows, meaning how many rows each cluster has
-
-	for i in range(numClusters):
-
-		count = 0
-
-		for j in range(dataset.shape[0]):
-
-			if dataset['ClusterID'].iloc[j] == i:
-				count += 1
-		
-		clusterCount[i] = count
-
-	# clusterCount is 'sorted' by key/cluster number, so clusterCount[3] gives the number of rows in the third cluster.
-	# topClustersDict is 'sorted' based on value, in descending order. So the first key (cluster #) is the one with the most rows
-
-	topClustersDict = sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
+	topClustersDict = findTopClusters(dataset)
 	print(topClustersDict)
 
 	filteredDataset = keepTopNClusters(dataset, topClustersNum, topClustersDict)
@@ -176,13 +181,31 @@ def main():
 	clusterDf = filteredDataset.groupby('ClusterID')
 	fuelsDf = filteredDataset.groupby('Fuels')
 
-	#plot(topClustersNum, filteredDataset, topClustersDict, clusterDf)
+	plot(topClustersNum, filteredDataset, topClustersDict, clusterDf)
 
 	for i in range(topClustersNum):
 		print('std dev of Score in cluster #' + str(topClustersDict[i][0]) + ': ' + str(clusterDf.get_group(int(topClustersDict[i][0]))['Score'].std()))
 
-	#second_dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl')
-	#second_dataset = original_dataset.drop(second_dataset.columns[[0,1,3,4]], axis=1)
+
+	############################################
+	########		Second dataset		########
+	############################################
+
+
+	dataset2 = pandas.read_excel(Path('data', '2100_2110.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
+	dataset2 = dataset2.drop(dataset.columns[0], axis=1)		# Removes the first unnamed column
+	
+	calculateAvg(dataset2, 'Phi')
+	calculateAvg(dataset2, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
+	calculateAvg(dataset2, 'Temperature (K)')
+
+	kmeans_dataset2 = dataset.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)
+
+	updateTableFromDict(kmeans_dataset2, 'Fuels', fuelsDict)
+	updateTableFromDict(kmeans_dataset2, 'Target', targetDict)
+	updateTableFromDict(kmeans_dataset2, 'Experiment Type', expTypeDict)
+
+	#dataset2['ClusterID'] = cluster.predict(kmeans_dataset2)
 
 
 if __name__ == '__main__':
