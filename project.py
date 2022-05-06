@@ -1,11 +1,9 @@
-import openpyxl, pandas, sklearn, math, statistics, plotly.graph_objs as go, plotly
+import sys, openpyxl, pandas, sklearn, math, statistics, plotly.graph_objs as go, plotly
 from sklearn.cluster import KMeans
 from pathlib import Path
 
 #pandas.set_option('display.max_rows', None)
-
 #TODO: compare models using the calculated standard deviations
-#TODO: parse command line arguments (clustering, fuel type...)
 
 def calculateAvg(dataset, column):
 
@@ -145,7 +143,10 @@ def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d sc
 
 def main():
 
-	kmeans_clusters = 15		# TODO: pass argument from command line (model filenames, clusters(?))
+	#firstModelPath = Path(sys.argv[1])		# Get model paths from command line, disabled for now
+	#secondModelPath = Path(sys.argv[2])
+
+	kmeans_clusters = 15
 	topClustersNum = 5
 
 	dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
