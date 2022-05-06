@@ -124,13 +124,14 @@ def main():
 	kmeans_clusters = 15		# TODO: pass argument from command line (model filenames, clusters(?))
 	topClustersNum = 5
 
-	dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl').drop(dataset.columns[[0,1,3,4]], axis=1)		# Removes the useless columns (TODO: drop by name instead of index)
+	dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
+	dataset = dataset.drop(dataset.columns[0], axis=1)		# Removes the first unnamed column
 
 	calculateAvg(dataset, 'Phi')
 	calculateAvg(dataset, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
 	calculateAvg(dataset, 'Temperature (K)')
 
-	kmeans_dataset = dataset.drop(dataset.columns[[0,2,8,9,14]], axis=1)		# Removes the columns on which I don't want to perform Kmeans
+	kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)		# Removes the columns on which I don't want to perform Kmeans
 
 	fuelsDict = createDict(kmeans_dataset, 'Fuels')  # So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
 	targetDict = createDict(kmeans_dataset, 'Target')
@@ -180,8 +181,8 @@ def main():
 	for i in range(topClustersNum):
 		print('std dev of Score in cluster #' + str(topClustersDict[i][0]) + ': ' + str(clusterDf.get_group(int(topClustersDict[i][0]))['Score'].std()))
 
-	second_dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl')
-	second_dataset = original_dataset.drop(second_dataset.columns[[0,1,3,4]], axis=1)		# Removes the useless columns (TODO: drop by name instead of index)
+	#second_dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl')
+	#second_dataset = original_dataset.drop(second_dataset.columns[[0,1,3,4]], axis=1)
 
 
 if __name__ == '__main__':
