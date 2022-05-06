@@ -181,7 +181,7 @@ def main():
 	clusterDf = filteredDataset.groupby('ClusterID')
 	fuelsDf = filteredDataset.groupby('Fuels')
 
-	plot(topClustersNum, filteredDataset, topClustersDict, clusterDf)
+	#plot(topClustersNum, filteredDataset, topClustersDict, clusterDf)
 
 	for i in range(topClustersNum):
 		print('std dev of Score in cluster #' + str(topClustersDict[i][0]) + ': ' + str(clusterDf.get_group(int(topClustersDict[i][0]))['Score'].std()))
@@ -193,19 +193,38 @@ def main():
 
 
 	dataset2 = pandas.read_excel(Path('data', '2100_2110.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
-	dataset2 = dataset2.drop(dataset.columns[0], axis=1)		# Removes the first unnamed column
+	dataset2 = dataset2.drop(dataset2.columns[0], axis=1)		# Removes the first unnamed column
 	
 	calculateAvg(dataset2, 'Phi')
 	calculateAvg(dataset2, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
 	calculateAvg(dataset2, 'Temperature (K)')
 
-	kmeans_dataset2 = dataset.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)
+	kmeans_dataset2 = dataset2.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)
 
 	updateTableFromDict(kmeans_dataset2, 'Fuels', fuelsDict)
 	updateTableFromDict(kmeans_dataset2, 'Target', targetDict)
 	updateTableFromDict(kmeans_dataset2, 'Experiment Type', expTypeDict)
 
-	#dataset2['ClusterID'] = cluster.predict(kmeans_dataset2)
+	dataset2['ClusterID'] = cluster.predict(kmeans_dataset2)
+	print(dataset2)
+
+	topClustersDict2 = findTopClusters(dataset2)
+	print(topClustersDict2)
+
+	filteredDataset2 = keepTopNClusters(dataset2, topClustersNum, topClustersDict2)
+
+	print(filteredDataset2)
+
+	clusterDf2 = filteredDataset2.groupby('ClusterID')
+	fuelsDf2 = filteredDataset2.groupby('Fuels')
+
+	plot(topClustersNum, filteredDataset2, topClustersDict2, clusterDf2)
+
+	print('SECOND MODEL:')
+
+	for i in range(topClustersNum):
+		print('std dev of Score in cluster #' + str(topClustersDict2[i][0]) + ': ' + str(clusterDf2.get_group(int(topClustersDict2[i][0]))['Score'].std()))
+
 
 
 if __name__ == '__main__':
