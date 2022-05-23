@@ -133,6 +133,7 @@ def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d sc
 	xc = []
 	yc = []
 	zc = []
+	centroidID = []		# The cluster # of the centroid
 
 	for i in range(topClustersNum):
 
@@ -150,17 +151,16 @@ def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d sc
 		xc.append(sum(tempListX) / topClustersDict[i][1])
 		yc.append(sum(tempListY) / topClustersDict[i][1])
 		zc.append(sum(tempListZ) / topClustersDict[i][1])
+		centroidID.append(topClustersDict[i][0])
+	
+	centroidDf = pandas.DataFrame(list(zip(xc, yc, zc, centroidID)), columns=['X', 'Y', 'Z', 'ClusterID'])
 	
 	plt = go.Figure()
 	clusterNumbers = list(list(zip(*topClustersDict))[0])		# get list of first element from tuple list. The same numbers of topClustersDict[i][0] below
-	# Even with a colorscale the centroids have a different color from the dots of the respective cluster...
-	plt.add_trace(go.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(size=5, color='red', colorscale='Viridis'), name='Centroid'))
+	plt.add_trace(go.Scatter3d(x=centroidDf['X'], y=centroidDf['Y'], z=centroidDf['Z'], mode='markers', marker=dict(size=5, color=centroidDf['ClusterID'], colorscale='Viridis'), name='Centroid'))
 
-	for i in range(topClustersNum):
-		tempDf = clusterDf.get_group(topClustersDict[i][0])
-		print("topclustersdict["+str(i)+"] = " + str(topClustersDict[i][0]))
-		plt.add_trace(go.Scatter3d(	x=tempDf['Temperature (K)'], y=tempDf['Pressure (Bar)'], z=tempDf['Phi'], customdata=tempDf['Fuels'], mode='markers',
-									marker=dict(size=2, color=topClustersDict[i][0], colorscale='Viridis'), name=('Cluster '+str(topClustersDict[i][0])),
+	plt.add_trace(go.Scatter3d(	x=dataset['Temperature (K)'], y=dataset['Pressure (Bar)'], z=dataset['Phi'], customdata=dataset['Fuels'], mode='markers',
+									marker=dict(size=2, color=dataset['ClusterID'], colorscale='Viridis'), name=('Cluster '+str(topClustersDict[i][0])),
 									hovertemplate='Temperature: %{x} K<br>Pressure: %{y} Bar<br>Phi: %{z}<br>Fuel: %{customdata}'))
 
 	# TODO: put file name in graph title, get from CLI parameter
@@ -214,10 +214,10 @@ def main():
 					continue
 				subDfList.append(finalDf)
 
-	for i in range(len(subDfList)):
+	'''for i in range(len(subDfList)):
 		print('\n\nPrinting sub-dataframe #' + str(i))
 		print(subDfList[i])
-
+'''
 	dataset, clusterObj = cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
 
 	print(dataset)
@@ -225,7 +225,7 @@ def main():
 	topClustersDict = findTopClusters(dataset)
 	print(topClustersDict)
 
-	'''
+	
 	filteredDataset = keepTopNClusters(dataset, topClustersNum, topClustersDict)
 
 	print(filteredDataset)
@@ -267,7 +267,7 @@ def main():
 
 	for i in range(topClustersNum):
 		print('std dev of Score in cluster #' + str(topClustersDict2[i][0]) + ': ' + str(clusterDf2.get_group(int(topClustersDict2[i][0]))['Score'].std()))
-'''
+
 
 
 if __name__ == '__main__':
