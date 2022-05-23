@@ -3,7 +3,10 @@ from sklearn.cluster import KMeans
 from pathlib import Path
 
 #pandas.set_option('display.max_rows', None)
-#TODO: compare models using the calculated standard deviations
+#TODO: same color for clusters and centroids
+#TODO: use divergent palette for colorblind people
+#TODO: make function for clustering (group by before clustering)
+#TODO: make list of subDataframes (see example in spreadsheet)
 
 def calculateAvg(dataset, column):
 
@@ -103,6 +106,28 @@ def findTopClusters(dataset):
 	return sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
 
 
+# Returns the clustered dataset and the "cluster" object so it can be used again for predict
+def cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, clusteringMode):
+
+	calculateAvg(dataset, 'Phi')
+	calculateAvg(dataset, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
+	calculateAvg(dataset, 'Temperature (K)')
+
+	kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)		# Removes the columns on which I don't want to perform Kmeans
+
+	updateTableFromDict(kmeans_dataset, 'Fuels', fuelsDict)
+	updateTableFromDict(kmeans_dataset, 'Target', targetDict)
+	updateTableFromDict(kmeans_dataset, 'Experiment Type', expTypeDict)
+
+	if clusteringMode == 'fit_predict':
+		dataset['ClusterID'] = clusterObj.fit_predict(kmeans_dataset)
+	
+	if clusteringMode == 'predict':
+		dataset['ClusterID'] = clusterObj.predict(kmeans_dataset)
+
+	return dataset, clusterObj
+
+
 def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d scatterplot and then show it
 	
 	xc = []
@@ -127,12 +152,15 @@ def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d sc
 		zc.append(sum(tempListZ) / topClustersDict[i][1])
 	
 	plt = go.Figure()
-	plt.add_trace(go.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(size=5, color='red'), name='Centroid'))
+	clusterNumbers = list(list(zip(*topClustersDict))[0])		# get list of first element from tuple list. The same numbers of topClustersDict[i][0] below
+	# Even with a colorscale the centroids have a different color from the dots of the respective cluster...
+	plt.add_trace(go.Scatter3d(x=xc, y=yc, z=zc, mode='markers', marker=dict(size=5, color='red', colorscale='Viridis'), name='Centroid'))
 
 	for i in range(topClustersNum):
 		tempDf = clusterDf.get_group(topClustersDict[i][0])
+		print("topclustersdict["+str(i)+"] = " + str(topClustersDict[i][0]))
 		plt.add_trace(go.Scatter3d(	x=tempDf['Temperature (K)'], y=tempDf['Pressure (Bar)'], z=tempDf['Phi'], customdata=tempDf['Fuels'], mode='markers',
-									marker=dict(size=2, color=topClustersDict[i][0]), name=('Cluster '+str(topClustersDict[i][0])),
+									marker=dict(size=2, color=topClustersDict[i][0], colorscale='Viridis'), name=('Cluster '+str(topClustersDict[i][0])),
 									hovertemplate='Temperature: %{x} K<br>Pressure: %{y} Bar<br>Phi: %{z}<br>Fuel: %{customdata}'))
 
 	# TODO: put file name in graph title, get from CLI parameter
@@ -145,30 +173,19 @@ def main():
 
 	#firstModelPath = Path(sys.argv[1])		# Get model paths from command line, disabled for now
 	#secondModelPath = Path(sys.argv[2])
-
 	kmeans_clusters = 15
 	topClustersNum = 5
+
+	clusterObj = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
 
 	dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
 	dataset = dataset.drop(dataset.columns[0], axis=1)		# Removes the first unnamed column
 
-	calculateAvg(dataset, 'Phi')
-	calculateAvg(dataset, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
-	calculateAvg(dataset, 'Temperature (K)')
+	fuelsDict = createDict(dataset, 'Fuels')  # So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
+	targetDict = createDict(dataset, 'Target')
+	expTypeDict = createDict(dataset, 'Experiment Type')
 
-	kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)		# Removes the columns on which I don't want to perform Kmeans
-
-	fuelsDict = createDict(kmeans_dataset, 'Fuels')  # So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
-	targetDict = createDict(kmeans_dataset, 'Target')
-	expTypeDict = createDict(kmeans_dataset, 'Experiment Type')
-
-	updateTableFromDict(kmeans_dataset, 'Fuels', fuelsDict)
-	updateTableFromDict(kmeans_dataset, 'Target', targetDict)
-	updateTableFromDict(kmeans_dataset, 'Experiment Type', expTypeDict)
-
-	cluster = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
-
-	dataset['ClusterID'] = cluster.fit_predict(kmeans_dataset)
+	dataset, clusterObj = cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
 
 	print(dataset)
 
@@ -196,17 +213,8 @@ def main():
 	dataset2 = pandas.read_excel(Path('data', '2100_2110.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
 	dataset2 = dataset2.drop(dataset2.columns[0], axis=1)		# Removes the first unnamed column
 	
-	calculateAvg(dataset2, 'Phi')
-	calculateAvg(dataset2, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
-	calculateAvg(dataset2, 'Temperature (K)')
+	dataset2, clusterObj = cluster(dataset2, fuelsDict, targetDict, expTypeDict, clusterObj, 'predict')
 
-	kmeans_dataset2 = dataset2.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)
-
-	updateTableFromDict(kmeans_dataset2, 'Fuels', fuelsDict)
-	updateTableFromDict(kmeans_dataset2, 'Target', targetDict)
-	updateTableFromDict(kmeans_dataset2, 'Experiment Type', expTypeDict)
-
-	dataset2['ClusterID'] = cluster.predict(kmeans_dataset2)
 	print(dataset2)
 
 	topClustersDict2 = findTopClusters(dataset2)
