@@ -111,7 +111,7 @@ def cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, clusteringM
 
 	calculateAvg(dataset, 'Phi')
 	calculateAvg(dataset, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
-	calculateAvg(dataset, 'Temperature (K)')
+	calculateAvg(dataset, 'Temperature (K)')	#TODO: add Reactor to clustering parameters(??)
 
 	kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)		# Removes the columns on which I don't want to perform Kmeans
 
@@ -184,6 +184,39 @@ def main():
 	fuelsDict = createDict(dataset, 'Fuels')  # So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
 	targetDict = createDict(dataset, 'Target')
 	expTypeDict = createDict(dataset, 'Experiment Type')
+	reactorDict = createDict(dataset, 'Reactor')
+
+	expTypeDf = dataset.groupby('Experiment Type')
+	print(fuelsDict)
+
+	#TODO: check if found sub-dataframes are not empty (is it even needed?)
+	subDfList = [] # has dataframes with rows with the same experiment type, reactor and fuel
+
+	for i in range(len(expTypeDict)):		# For each experiment type
+		try:
+			subDf = expTypeDf.get_group(expTypeDict.get(i))
+		except:
+			continue		# When I used "pass" I had 375 sub-dataframes, most were duplicates. With continue I only have 50 (can I do it without these ugly try/except??
+		reactorSubDf = subDf.groupby('Reactor')
+
+		for j in range(len(reactorDict)):	# For each reactor type
+			try:
+				fuelsSubDf = reactorSubDf.get_group(reactorDict.get(j))
+			except:
+				continue
+			fuelsSubDf = subDf.groupby('Fuels')
+
+			for k in range(len(fuelsDict)):
+				print('current exptype and reactor and fuel: ' + str(expTypeDict.get(i)) + ', ' + str(reactorDict.get(j)) + ', ' + str(fuelsDict.get(k)))
+				try:
+					finalDf = fuelsSubDf.get_group(fuelsDict.get(k))	# Used to give an error if there are no rows with the current expType and reactor for [CH4, H2]
+				except:
+					continue
+				subDfList.append(finalDf)
+
+	for i in range(len(subDfList)):
+		print('\n\nPrinting sub-dataframe #' + str(i))
+		print(subDfList[i])
 
 	dataset, clusterObj = cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
 
@@ -192,6 +225,7 @@ def main():
 	topClustersDict = findTopClusters(dataset)
 	print(topClustersDict)
 
+	'''
 	filteredDataset = keepTopNClusters(dataset, topClustersNum, topClustersDict)
 
 	print(filteredDataset)
@@ -233,7 +267,7 @@ def main():
 
 	for i in range(topClustersNum):
 		print('std dev of Score in cluster #' + str(topClustersDict2[i][0]) + ': ' + str(clusterDf2.get_group(int(topClustersDict2[i][0]))['Score'].std()))
-
+'''
 
 
 if __name__ == '__main__':
