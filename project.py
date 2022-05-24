@@ -1,4 +1,4 @@
-import sys, openpyxl, pandas, sklearn, math, statistics, plotly.graph_objs as go, plotly, numpy as np
+import sys, openpyxl, pandas, sklearn, math, plotly.graph_objs as go, plotly, numpy as np
 from sklearn.cluster import KMeans
 from pathlib import Path
 
@@ -19,17 +19,6 @@ def getKeyFromValue(dictionary, value):
 			return key
 	
 	return 0
-
-
-def getStdDevOfColInCluster(dataset, clusterNumber, column):		# For the 'converted' columns like Fuel, I have to pass kmeans_dataset (and thus add the Cluster column to it, too)
-
-	newList = []
-
-	for i in range(dataset.shape[0]):
-		if dataset['ClusterID'].iloc[i] == clusterNumber:
-			newList.append(dataset[column].iloc[i])
-	
-	return statistics.stdev(newList)
 
 
 def createDict(dataset, column):
@@ -102,7 +91,7 @@ def findTopClusters(dataset):
 	return sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
 
 
-def getPermutations(dataset, expTypeDict, reactorDict, fuelsDict):		# returns a list of dataframes with rows with the same experiment type, reactor and fuel
+def getPermutations(dataset, expTypeDict, reactorDict, fuelsDict, minRows):		# returns a list of dataframes with rows with the same experiment type, reactor and fuel
 	
 	expTypeDf = dataset.groupby('Experiment Type')
 
@@ -129,8 +118,14 @@ def getPermutations(dataset, expTypeDict, reactorDict, fuelsDict):		# returns a 
 					subDfList.append(finalDf)
 				except:
 					continue
+
+	newSubDfList = []
+
+	for i in range(len(subDfList)):			# Discard sub-dfs with too few rows. Create variable minRows or change # of clusters?
+		if subDfList[i].shape[0] > minRows:
+			newSubDfList.append(subDfList[i])
 	
-	return subDfList
+	return newSubDfList
 
 
 def cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, clusteringMode):		# Returns the clustered dataset and the "cluster" object so it can be used again for predict
@@ -213,39 +208,32 @@ def main():
 	expTypeDict = createDict(dataset, 'Experiment Type')
 	reactorDict = createDict(dataset, 'Reactor')
 
-	subDfList = getPermutations(dataset, expTypeDict, reactorDict, fuelsDict)
-
+	subDfList = getPermutations(dataset, expTypeDict, reactorDict, fuelsDict, 20)	# 20 = minimum amount of rows each dataframe needs to have
+	
 	for i in range(len(subDfList)):
+		subDfList[i], clusterObj = cluster(subDfList[i], fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
+		print('CLUSTERED DF #: ' + str(i))
 		print(subDfList[i])
 
-	newSubDfList = []
-
-	for i in range(len(subDfList)):			# Discard sub-dfs with too few rows. Create variable minRows or change # of clusters?
-		if subDfList[i].shape[0] > 20:
-			newSubDfList.append(subDfList[i])
-	
-	for i in range(len(newSubDfList)):
-		newSubDfList[i], clusterObj = cluster(newSubDfList[i], fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
-		print('CLUSTERED DF #: ' + str(i))
-		print(newSubDfList[i])
-
+	'''
 	dataset, clusterObj = cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
-	#print(dataset)
+	print(dataset)
 
 	topClustersDict = findTopClusters(dataset)
-	#print(topClustersDict)
+	print(topClustersDict)
 
 	filteredDataset = keepTopNClusters(dataset, topClustersNum, topClustersDict)
 
-	#print(filteredDataset)
+	print(filteredDataset)
 
 	clusterDf = filteredDataset.groupby('ClusterID')
 	fuelsDf = filteredDataset.groupby('Fuels')
 
-	#plot(topClustersNum, filteredDataset, topClustersDict, clusterDf)
+	plot(topClustersNum, filteredDataset, topClustersDict, clusterDf)
 
-	#for i in range(topClustersNum):
-		#print('std dev of Score in cluster #' + str(topClustersDict[i][0]) + ': ' + str(clusterDf.get_group(int(topClustersDict[i][0]))['Score'].std()))
+	for i in range(topClustersNum):
+		print('std dev of Score in cluster #' + str(topClustersDict[i][0]) + ': ' + str(clusterDf.get_group(int(topClustersDict[i][0]))['Score'].std()))
+	'''
 
 
 
