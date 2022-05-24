@@ -3,10 +3,6 @@ from sklearn.cluster import KMeans
 from pathlib import Path
 
 #pandas.set_option('display.max_rows', None)
-#TODO: same color for clusters and centroids
-#TODO: use divergent palette for colorblind people
-#TODO: make function for clustering (group by before clustering)
-#TODO: make list of subDataframes (see example in spreadsheet)
 
 def calculateAvg(dataset, column):
 
@@ -106,14 +102,44 @@ def findTopClusters(dataset):
 	return sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
 
 
-# Returns the clustered dataset and the "cluster" object so it can be used again for predict
-def cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, clusteringMode):
+def getPermutations(dataset, expTypeDict, reactorDict, fuelsDict):		# returns a list of dataframes with rows with the same experiment type, reactor and fuel
+	
+	expTypeDf = dataset.groupby('Experiment Type')
 
-	calculateAvg(dataset, 'Phi')
-	calculateAvg(dataset, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
-	calculateAvg(dataset, 'Temperature (K)')	#TODO: add Reactor to clustering parameters(??)
+	subDfList = []
+
+	for i in range(len(expTypeDict)):		# For each experiment type
+		try:
+			subDf = expTypeDf.get_group(expTypeDict.get(i))
+			reactorSubDf = subDf.groupby('Reactor')
+		except:
+			continue		# When I used "pass" I had 375 sub-dataframes, most were duplicates. With continue I only have 50 (can I do it without these ugly try/except??
+
+		for j in range(len(reactorDict)):	# For each reactor type
+			try:
+				fuelsSubDf = reactorSubDf.get_group(reactorDict.get(j))
+				fuelsSubDf = fuelsSubDf.groupby('Fuels')
+			except:
+				continue
+
+			for k in range(len(fuelsDict)):
+				print('current exptype and reactor and fuel: ' + str(expTypeDict.get(i)) + ', ' + str(reactorDict.get(j)) + ', ' + str(fuelsDict.get(k)))
+				try:
+					finalDf = fuelsSubDf.get_group(fuelsDict.get(k))	# Used to give an error if there are no rows with the current expType and reactor for [CH4, H2]
+					subDfList.append(finalDf)
+				except:
+					continue
+	
+	return subDfList
+
+
+def cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, clusteringMode):		# Returns the clustered dataset and the "cluster" object so it can be used again for predict
 
 	kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)		# Removes the columns on which I don't want to perform Kmeans
+
+	calculateAvg(kmeans_dataset, 'Phi')
+	calculateAvg(kmeans_dataset, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
+	calculateAvg(kmeans_dataset, 'Temperature (K)')	#TODO: add Reactor to clustering parameters(??)
 
 	updateTableFromDict(kmeans_dataset, 'Fuels', fuelsDict)
 	updateTableFromDict(kmeans_dataset, 'Target', targetDict)
@@ -186,37 +212,9 @@ def main():
 	expTypeDict = createDict(dataset, 'Experiment Type')
 	reactorDict = createDict(dataset, 'Reactor')
 
-	expTypeDf = dataset.groupby('Experiment Type')
-	print(fuelsDict)
-	print(expTypeDict)
-
-	#TODO: check if found sub-dataframes are not empty (is it even needed?)
-	subDfList = [] # has dataframes with rows with the same experiment type, reactor and fuel
-
-	for i in range(len(expTypeDict)):		# For each experiment type
-		try:
-			subDf = expTypeDf.get_group(expTypeDict.get(i))
-			reactorSubDf = subDf.groupby('Reactor')
-		except:
-			continue		# When I used "pass" I had 375 sub-dataframes, most were duplicates. With continue I only have 50 (can I do it without these ugly try/except??
-
-		for j in range(len(reactorDict)):	# For each reactor type
-			try:
-				fuelsSubDf = reactorSubDf.get_group(reactorDict.get(j))
-				fuelsSubDf = fuelsSubDf.groupby('Fuels')
-			except:
-				continue
-
-			for k in range(len(fuelsDict)):
-				print('current exptype and reactor and fuel: ' + str(expTypeDict.get(i)) + ', ' + str(reactorDict.get(j)) + ', ' + str(fuelsDict.get(k)))
-				try:
-					finalDf = fuelsSubDf.get_group(fuelsDict.get(k))	# Used to give an error if there are no rows with the current expType and reactor for [CH4, H2]
-					subDfList.append(finalDf)
-				except:
-					continue
-
+	subDfList = getPermutations(dataset, expTypeDict, reactorDict, fuelsDict)
+	
 	for i in range(len(subDfList)):
-		print('\n\nPrinting sub-dataframe #' + str(i))
 		print(subDfList[i])
 
 	dataset, clusterObj = cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
