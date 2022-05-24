@@ -113,7 +113,7 @@ def getPermutations(dataset, expTypeDict, reactorDict, fuelsDict):		# returns a 
 			subDf = expTypeDf.get_group(expTypeDict.get(i))
 			reactorSubDf = subDf.groupby('Reactor')
 		except:
-			continue		# When I used "pass" I had 375 sub-dataframes, most were duplicates. With continue I only have 50 (can I do it without these ugly try/except??
+			continue
 
 		for j in range(len(reactorDict)):	# For each reactor type
 			try:
@@ -123,7 +123,7 @@ def getPermutations(dataset, expTypeDict, reactorDict, fuelsDict):		# returns a 
 				continue
 
 			for k in range(len(fuelsDict)):
-				print('current exptype and reactor and fuel: ' + str(expTypeDict.get(i)) + ', ' + str(reactorDict.get(j)) + ', ' + str(fuelsDict.get(k)))
+				#print('current exptype and reactor and fuel: ' + str(expTypeDict.get(i)) + ', ' + str(reactorDict.get(j)) + ', ' + str(fuelsDict.get(k)))
 				try:
 					finalDf = fuelsSubDf.get_group(fuelsDict.get(k))	# Used to give an error if there are no rows with the current expType and reactor for [CH4, H2]
 					subDfList.append(finalDf)
@@ -135,15 +135,16 @@ def getPermutations(dataset, expTypeDict, reactorDict, fuelsDict):		# returns a 
 
 def cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, clusteringMode):		# Returns the clustered dataset and the "cluster" object so it can be used again for predict
 
-	kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)		# Removes the columns on which I don't want to perform Kmeans
+	#kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)		# Removes the columns on which I don't want to perform Kmeans
+	kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Experiment Type', 'Reactor', 'Target', 'Fuels', 'Error', 'd0L2', 'd1L2', 'd0Pe', 'd1Pe', 'shift'], axis=1)
 
 	calculateAvg(kmeans_dataset, 'Phi')
 	calculateAvg(kmeans_dataset, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
-	calculateAvg(kmeans_dataset, 'Temperature (K)')	#TODO: add Reactor to clustering parameters(??)
+	calculateAvg(kmeans_dataset, 'Temperature (K)')
 
-	updateTableFromDict(kmeans_dataset, 'Fuels', fuelsDict)
-	updateTableFromDict(kmeans_dataset, 'Target', targetDict)
-	updateTableFromDict(kmeans_dataset, 'Experiment Type', expTypeDict)
+	#updateTableFromDict(kmeans_dataset, 'Fuels', fuelsDict)			# Now I don't want to use Fuels/Target/ExpType when clustering. TODO: update
+	#updateTableFromDict(kmeans_dataset, 'Target', targetDict)
+	#updateTableFromDict(kmeans_dataset, 'Experiment Type', expTypeDict)
 
 	if clusteringMode == 'fit_predict':
 		dataset['ClusterID'] = clusterObj.fit_predict(kmeans_dataset)
@@ -213,13 +214,23 @@ def main():
 	reactorDict = createDict(dataset, 'Reactor')
 
 	subDfList = getPermutations(dataset, expTypeDict, reactorDict, fuelsDict)
-	
+
 	for i in range(len(subDfList)):
 		print(subDfList[i])
 
-	dataset, clusterObj = cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
+	newSubDfList = []
 
-	print(dataset)
+	for i in range(len(subDfList)):			# Discard sub-dfs with too few rows. Create variable minRows or change # of clusters?
+		if subDfList[i].shape[0] > 20:
+			newSubDfList.append(subDfList[i])
+	
+	for i in range(len(newSubDfList)):
+		newSubDfList[i], clusterObj = cluster(newSubDfList[i], fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
+		print('CLUSTERED DF #: ' + str(i))
+		print(newSubDfList[i])
+
+	dataset, clusterObj = cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
+	#print(dataset)
 
 	topClustersDict = findTopClusters(dataset)
 	#print(topClustersDict)
