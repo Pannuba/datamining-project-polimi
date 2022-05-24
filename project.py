@@ -188,6 +188,7 @@ def main():
 
 	expTypeDf = dataset.groupby('Experiment Type')
 	print(fuelsDict)
+	print(expTypeDict)
 
 	#TODO: check if found sub-dataframes are not empty (is it even needed?)
 	subDfList = [] # has dataframes with rows with the same experiment type, reactor and fuel
@@ -195,78 +196,47 @@ def main():
 	for i in range(len(expTypeDict)):		# For each experiment type
 		try:
 			subDf = expTypeDf.get_group(expTypeDict.get(i))
+			reactorSubDf = subDf.groupby('Reactor')
 		except:
 			continue		# When I used "pass" I had 375 sub-dataframes, most were duplicates. With continue I only have 50 (can I do it without these ugly try/except??
-		reactorSubDf = subDf.groupby('Reactor')
 
 		for j in range(len(reactorDict)):	# For each reactor type
 			try:
 				fuelsSubDf = reactorSubDf.get_group(reactorDict.get(j))
+				fuelsSubDf = fuelsSubDf.groupby('Fuels')
 			except:
 				continue
-			fuelsSubDf = subDf.groupby('Fuels')
 
 			for k in range(len(fuelsDict)):
 				print('current exptype and reactor and fuel: ' + str(expTypeDict.get(i)) + ', ' + str(reactorDict.get(j)) + ', ' + str(fuelsDict.get(k)))
 				try:
 					finalDf = fuelsSubDf.get_group(fuelsDict.get(k))	# Used to give an error if there are no rows with the current expType and reactor for [CH4, H2]
+					subDfList.append(finalDf)
 				except:
 					continue
-				subDfList.append(finalDf)
 
-	'''for i in range(len(subDfList)):
+	for i in range(len(subDfList)):
 		print('\n\nPrinting sub-dataframe #' + str(i))
 		print(subDfList[i])
-'''
+
 	dataset, clusterObj = cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
 
 	print(dataset)
 
 	topClustersDict = findTopClusters(dataset)
-	print(topClustersDict)
+	#print(topClustersDict)
 
-	
 	filteredDataset = keepTopNClusters(dataset, topClustersNum, topClustersDict)
 
-	print(filteredDataset)
+	#print(filteredDataset)
 
 	clusterDf = filteredDataset.groupby('ClusterID')
 	fuelsDf = filteredDataset.groupby('Fuels')
 
 	#plot(topClustersNum, filteredDataset, topClustersDict, clusterDf)
 
-	for i in range(topClustersNum):
-		print('std dev of Score in cluster #' + str(topClustersDict[i][0]) + ': ' + str(clusterDf.get_group(int(topClustersDict[i][0]))['Score'].std()))
-
-
-	############################################
-	########		Second dataset		########
-	############################################
-
-
-	dataset2 = pandas.read_excel(Path('data', '2100_2110.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
-	dataset2 = dataset2.drop(dataset2.columns[0], axis=1)		# Removes the first unnamed column
-	
-	dataset2, clusterObj = cluster(dataset2, fuelsDict, targetDict, expTypeDict, clusterObj, 'predict')
-
-	print(dataset2)
-
-	topClustersDict2 = findTopClusters(dataset2)
-	print(topClustersDict2)
-
-	filteredDataset2 = keepTopNClusters(dataset2, topClustersNum, topClustersDict2)
-
-	print(filteredDataset2)
-
-	clusterDf2 = filteredDataset2.groupby('ClusterID')
-	fuelsDf2 = filteredDataset2.groupby('Fuels')
-
-	plot(topClustersNum, filteredDataset2, topClustersDict2, clusterDf2)
-
-	print('SECOND MODEL:')
-
-	for i in range(topClustersNum):
-		print('std dev of Score in cluster #' + str(topClustersDict2[i][0]) + ': ' + str(clusterDf2.get_group(int(topClustersDict2[i][0]))['Score'].std()))
+	#for i in range(topClustersNum):
+		#print('std dev of Score in cluster #' + str(topClustersDict[i][0]) + ': ' + str(clusterDf.get_group(int(topClustersDict[i][0]))['Score'].std()))
 
 
 
