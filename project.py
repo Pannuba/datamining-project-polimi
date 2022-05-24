@@ -91,7 +91,7 @@ def findTopClusters(dataset):
 	return sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
 
 
-def getPermutations(dataset, expTypeDict, reactorDict, fuelsDict, minRows):		# returns a list of dataframes with rows with the same experiment type, reactor and fuel
+def getPermutations(dataset, expTypeDict, reactorDict, fuelsDict, targetDict, minRows):		# returns a list of dataframes with rows with the same experiment type, reactor and fuel
 	
 	expTypeDf = dataset.groupby('Experiment Type')
 
@@ -114,10 +114,18 @@ def getPermutations(dataset, expTypeDict, reactorDict, fuelsDict, minRows):		# r
 			for k in range(len(fuelsDict)):
 				#print('current exptype and reactor and fuel: ' + str(expTypeDict.get(i)) + ', ' + str(reactorDict.get(j)) + ', ' + str(fuelsDict.get(k)))
 				try:
-					finalDf = fuelsSubDf.get_group(fuelsDict.get(k))	# Used to give an error if there are no rows with the current expType and reactor for [CH4, H2]
-					subDfList.append(finalDf)
+					targetSubDf = fuelsSubDf.get_group(fuelsDict.get(k))	# Used to give an error if there are no rows with the current expType and reactor for [CH4, H2]
+					targetSubDf = targetSubDf.groupby('Target')
 				except:
 					continue
+			
+				for l in range(len(targetDict)):
+					try:
+						finalDf = targetSubDf.get_group(targetDict.get(l))	# Used to give an error if there are no rows with the current expType and reactor for [CH4, H2]
+						subDfList.append(finalDf)
+					except:
+						continue
+
 
 	newSubDfList = []
 
@@ -195,7 +203,9 @@ def main():
 
 	#firstModelPath = Path(sys.argv[1])		# Get model paths from command line, disabled for now
 	#secondModelPath = Path(sys.argv[2])
-	kmeans_clusters = 15
+
+	pandas.options.mode.chained_assignment = None	# Suppresses the annoying SettingWithCopyWarning
+	kmeans_clusters = 5		# Was 15, changed because subclusters are much smaller
 	topClustersNum = 5
 
 	clusterObj = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
@@ -208,12 +218,19 @@ def main():
 	expTypeDict = createDict(dataset, 'Experiment Type')
 	reactorDict = createDict(dataset, 'Reactor')
 
-	subDfList = getPermutations(dataset, expTypeDict, reactorDict, fuelsDict, 20)	# 20 = minimum amount of rows each dataframe needs to have
+	subDfList = getPermutations(dataset, expTypeDict, reactorDict, fuelsDict, targetDict, 10)	# 10 = minimum amount of rows each dataframe needs to have
 	
 	for i in range(len(subDfList)):
 		subDfList[i], clusterObj = cluster(subDfList[i], fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
-		print('CLUSTERED DF #: ' + str(i))
+		print('Processing clustered sub-dataframe #: ' + str(i))
 		print(subDfList[i])
+		topClustersDict = findTopClusters(subDfList[i])
+		print(topClustersDict)
+		clusterDf = subDfList[i].groupby('ClusterID')
+
+		for j in range(topClustersNum):		# Sometimes it's NaN because some clusters only have 1 row
+			print('std dev of Score in cluster #' + str(topClustersDict[j][0]) + ': ' + str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].std()))
+
 
 	'''
 	dataset, clusterObj = cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
@@ -227,7 +244,6 @@ def main():
 	print(filteredDataset)
 
 	clusterDf = filteredDataset.groupby('ClusterID')
-	fuelsDf = filteredDataset.groupby('Fuels')
 
 	plot(topClustersNum, filteredDataset, topClustersDict, clusterDf)
 
