@@ -92,17 +92,19 @@ def findTopClusters(dataset):
 
 
 # Returns the list of permutations (dict list) given a list of columns. Generic approach to getPermutations
-def getPermutationsGeneric(columns, columnNames, dictList):
+def getPermutationsGeneric(columns, dictList):
 
 	permutationsList = []
+	columnNames = list(columns)
+	rows = len(columns[columnNames[0]])
 
-	for i in range(len(columns[0])):		# For each row
+	for i in range(rows):		# For each row
 		
 		tempDict = {}
 
-		for j in range(len(columns)):		# For each column
+		for col in columns:		# For each column (col = key of columns dict = column name)
 		
-			tempDict[columnNames[j]] = columns[j][i]	# Add cell values to dict
+			tempDict[col] = columns[col][i]	# Add cell values to dict
 
 		if tempDict not in permutationsList:
 			permutationsList.append(tempDict)
@@ -243,17 +245,13 @@ def main():
 	for i in range(len(subDfList)):
 		print(subDfList[i])
 	'''
-	
-	## Test getPermutationsGeneric
 
-	expTypeList = dataset['Experiment Type'].tolist()
-	reactorList = dataset['Reactor'].tolist()
-	fuelsList = dataset['Fuels'].tolist()
+	columns = {}
+	columns['Experiment Type'] = dataset['Experiment Type'].tolist()
+	columns['Reactor'] = dataset['Reactor'].tolist()
+	columns['Fuels'] = dataset['Fuels'].tolist()
 
-	columnsList = [expTypeList, reactorList, fuelsList]
-	columnNames = ['Experiment Type', 'Reactor', 'Fuels']
-
-	testDict = getPermutationsGeneric(columnsList, columnNames, [expTypeDict, reactorDict, fuelsDict])
+	testDict = getPermutationsGeneric(columns, [expTypeDict, reactorDict, fuelsDict])
 
 	for i in range(len(testDict)):
 		print(str(testDict[i]))
