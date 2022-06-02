@@ -199,28 +199,35 @@ def main():
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
 
-	# TODO: calculate median, avg, etc of experiments with a specific experiment type, reactor and fuel. I assume I have to calculate all possible combinations from the dict I found (no user input)
+	heatmapDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std'])		# Dataframe later used for plotting the heatmap
 
 	for i in range(len(permutations)):
 
+		newRow = []
 		tempDataset = dataset
 										# permutations[0] = {'Experiment Type': 'ignition delay measurement', 'Reactor': 'shock tube', 'Fuels': "['H2', 'CO']"}
 		for col in permutations[0]:		# Group the dataset for each categoric column. col is the name of the current categoric column
 			tempDataset = tempDataset.groupby(col)
 			tempDataset = tempDataset.get_group(permutations[i][col])
+			newRow.append(permutations[i][col])		# Start building the new row by adding the permutation's values
 
-		if tempDataset.shape[0] > 10:	# Only keep experiment types with more than 10 rows/experiments
+		if tempDataset.shape[0] > 10:	# Only keep experiment types with more than 10 rows/experiments. TODO: keep everything?
 			print('\nProcessing experiments with ' + str(permutations[i]))# + ' are:\n' + str(tempDataset) + '\n')
-			tempDataset, clusterObj = cluster(tempDataset, clusterObj, 'fit_predict')
+			tempDataset, clusterObj = cluster(tempDataset, clusterObj, 'fit_predict')				# TODO: cluster everything or only the biggest sets? Keep the ones smaller than 10?
 			clusterDf = tempDataset.groupby('ClusterID')
 			topClustersDict = findTopClusters(tempDataset)
-
+			'''
 			for j in range(topClustersNum):
 				print(	'std dev and median of Score in cluster #' + str(j + 1) + ': ' +
 						str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].std()) + ', ' +
 						str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].median()) )
-		
+			'''
+			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].mean())	# Only uses the biggest cluster
+			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].median())
+			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].std())
+			heatmapDf.loc[len(heatmapDf.index)] = newRow
 	
+	print(heatmapDf)
 
 if __name__ == '__main__':
 	main()
