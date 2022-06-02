@@ -111,7 +111,7 @@ def getPermutations(columns, dictList):			# Returns the list of permutations (di
 	return permutationsList
 
 
-def cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, clusteringMode):		# Returns the clustered dataset and the "cluster" object so it can be used again for predict
+def cluster(dataset, dictList, clusterObj, clusteringMode):		# Returns the clustered dataset and the "cluster" object so it can be used again for predict
 
 	#kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)		# Removes the columns on which I don't want to perform Kmeans
 	kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Experiment Type', 'Reactor', 'Target', 'Fuels', 'Error', 'd0L2', 'd1L2', 'd0Pe', 'd1Pe', 'shift'], axis=1)
@@ -188,17 +188,20 @@ def main():
 	dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
 	dataset = dataset.drop(dataset.columns[0], axis=1)		# Removes the first unnamed column
 
-	fuelsDict = createDict(dataset, 'Fuels')  # So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
-	targetDict = createDict(dataset, 'Target')
-	expTypeDict = createDict(dataset, 'Experiment Type')
+	expTypeDict = createDict(dataset, 'Experiment Type')	# So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
 	reactorDict = createDict(dataset, 'Reactor')
+	#targetDict = createDict(dataset, 'Target')
+	fuelsDict = createDict(dataset, 'Fuels')
+
+	dictList = [expTypeDict, reactorDict, fuelsDict]
 
 	columns = {}
+	
 	columns['Experiment Type'] = dataset['Experiment Type'].tolist()
 	columns['Reactor'] = dataset['Reactor'].tolist()
 	columns['Fuels'] = dataset['Fuels'].tolist()
 
-	permutations = getPermutations(columns, [expTypeDict, reactorDict, fuelsDict])	# List of all possible permutations in the dataset (by categoric columns)
+	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
 
 	# TODO: calculate median, avg, etc of experiments with a specific experiment type, reactor and fuel. I assume I have to calculate all possible combinations from the dict I found (no user input)
 
@@ -210,9 +213,8 @@ def main():
 			tempDataset = tempDataset.groupby(col)
 			tempDataset = tempDataset.get_group(permutations[i][col])
 
-		#print('Experiments with ' + str(permutations[i]) + ' are:\n' + str(tempDataset) + '\n')
-		print('Experiments with ' + str(permutations[i]) + ' have
-
+		if tempDataset.shape[0] > 10:	# Only keep experiment types with more than 10 rows/experiments
+			print('Experiments with ' + str(permutations[i]) + ' are:\n' + str(tempDataset) + '\n')
 		
 	
 
