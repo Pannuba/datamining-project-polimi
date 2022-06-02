@@ -111,18 +111,13 @@ def getPermutations(columns, dictList):			# Returns the list of permutations (di
 	return permutationsList
 
 
-def cluster(dataset, dictList, clusterObj, clusteringMode):		# Returns the clustered dataset and the "cluster" object so it can be used again for predict
+def cluster(dataset, clusterObj, clusteringMode):		# Returns the clustered dataset and the "cluster" object so it can be used again for predict
 
-	#kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)		# Removes the columns on which I don't want to perform Kmeans
 	kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Experiment Type', 'Reactor', 'Target', 'Fuels', 'Error', 'd0L2', 'd1L2', 'd0Pe', 'd1Pe', 'shift'], axis=1)
 
 	calculateAvg(kmeans_dataset, 'Phi')
 	calculateAvg(kmeans_dataset, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
 	calculateAvg(kmeans_dataset, 'Temperature (K)')
-
-	#updateTableFromDict(kmeans_dataset, 'Fuels', fuelsDict)			# Now I don't want to use Fuels/Target/ExpType when clustering. TODO: update
-	#updateTableFromDict(kmeans_dataset, 'Target', targetDict)
-	#updateTableFromDict(kmeans_dataset, 'Experiment Type', expTypeDict)
 
 	if clusteringMode == 'fit_predict':
 		dataset['ClusterID'] = clusterObj.fit_predict(kmeans_dataset)
@@ -181,7 +176,7 @@ def main():
 
 	pandas.options.mode.chained_assignment = None	# Suppresses the annoying SettingWithCopyWarning
 	kmeans_clusters = 5		# Was 15, changed because subclusters are much smaller
-	topClustersNum = 5
+	topClustersNum = 2
 
 	clusterObj = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
 
@@ -214,7 +209,15 @@ def main():
 			tempDataset = tempDataset.get_group(permutations[i][col])
 
 		if tempDataset.shape[0] > 10:	# Only keep experiment types with more than 10 rows/experiments
-			print('Experiments with ' + str(permutations[i]) + ' are:\n' + str(tempDataset) + '\n')
+			print('\nProcessing experiments with ' + str(permutations[i]))# + ' are:\n' + str(tempDataset) + '\n')
+			tempDataset, clusterObj = cluster(tempDataset, clusterObj, 'fit_predict')
+			clusterDf = tempDataset.groupby('ClusterID')
+			topClustersDict = findTopClusters(tempDataset)
+
+			for j in range(topClustersNum):
+				print(	'std dev and median of Score in cluster #' + str(j + 1) + ': ' +
+						str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].std()) + ', ' +
+						str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].median()) )
 		
 	
 
