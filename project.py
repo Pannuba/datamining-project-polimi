@@ -1,4 +1,4 @@
-import sys, openpyxl, pandas, sklearn, math, plotly.graph_objs as go, plotly, numpy as np
+import sys, openpyxl, pandas, sklearn, itertools, math, plotly.graph_objs as go, plotly, numpy as np
 from sklearn.cluster import KMeans
 from pathlib import Path
 
@@ -89,6 +89,25 @@ def findTopClusters(dataset):
 	# topClustersDict is 'sorted' based on value, in descending order. So the first key (cluster #) is the one with the most rows
 
 	return sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
+
+
+# Returns the list of permutations (dict list) given a list of columns. Generic approach to getPermutations
+def getPermutationsGeneric(columns, columnNames, dictList):
+
+	permutationsList = []
+
+	for i in range(len(columns[0])):		# For each row
+		
+		tempDict = {}
+
+		for j in range(len(columns)):		# For each column
+		
+			tempDict[columnNames[j]] = columns[j][i]	# Add cell values to dict
+
+		if tempDict not in permutationsList:
+			permutationsList.append(tempDict)
+
+	return permutationsList
 
 
 def getPermutations(dataset, expTypeDict, reactorDict, fuelsDict, targetDict, minRows):		# returns a list of dataframes with rows with the same experiment type, reactor and fuel
@@ -218,40 +237,27 @@ def main():
 	expTypeDict = createDict(dataset, 'Experiment Type')
 	reactorDict = createDict(dataset, 'Reactor')
 
+	'''
 	subDfList = getPermutations(dataset, expTypeDict, reactorDict, fuelsDict, targetDict, 10)	# 10 = minimum amount of rows each dataframe needs to have
-	
+
 	for i in range(len(subDfList)):
-		subDfList[i], clusterObj = cluster(subDfList[i], fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
-		print('Processing clustered sub-dataframe #: ' + str(i))
 		print(subDfList[i])
-		topClustersDict = findTopClusters(subDfList[i])
-		print(topClustersDict)
-		clusterDf = subDfList[i].groupby('ClusterID')
-
-		for j in range(topClustersNum):		# Sometimes it's NaN because some clusters only have 1 row
-			print('std dev of Score in cluster #' + str(topClustersDict[j][0]) + ': ' + str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].std()))
-
-
 	'''
-	dataset, clusterObj = cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, 'fit_predict')
-	print(dataset)
+	
+	## Test getPermutationsGeneric
 
-	topClustersDict = findTopClusters(dataset)
-	print(topClustersDict)
+	expTypeList = dataset['Experiment Type'].tolist()
+	reactorList = dataset['Reactor'].tolist()
+	fuelsList = dataset['Fuels'].tolist()
 
-	filteredDataset = keepTopNClusters(dataset, topClustersNum, topClustersDict)
+	columnsList = [expTypeList, reactorList, fuelsList]
+	columnNames = ['Experiment Type', 'Reactor', 'Fuels']
 
-	print(filteredDataset)
+	testDict = getPermutationsGeneric(columnsList, columnNames, [expTypeDict, reactorDict, fuelsDict])
 
-	clusterDf = filteredDataset.groupby('ClusterID')
-
-	plot(topClustersNum, filteredDataset, topClustersDict, clusterDf)
-
-	for i in range(topClustersNum):
-		print('std dev of Score in cluster #' + str(topClustersDict[i][0]) + ': ' + str(clusterDf.get_group(int(topClustersDict[i][0]))['Score'].std()))
-	'''
-
-
+	for i in range(len(testDict)):
+		print(str(testDict[i]))
+	
 
 if __name__ == '__main__':
 	main()
