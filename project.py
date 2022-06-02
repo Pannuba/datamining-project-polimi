@@ -185,15 +185,16 @@ def main():
 
 	expTypeDict = createDict(dataset, 'Experiment Type')	# So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
 	reactorDict = createDict(dataset, 'Reactor')
-	#targetDict = createDict(dataset, 'Target')
+	targetDict = createDict(dataset, 'Target')
 	fuelsDict = createDict(dataset, 'Fuels')
 
-	dictList = [expTypeDict, reactorDict, fuelsDict]
+	dictList = [expTypeDict, reactorDict, targetDict, fuelsDict]
 
 	columns = {}
 	
 	columns['Experiment Type'] = dataset['Experiment Type'].tolist()
 	columns['Reactor'] = dataset['Reactor'].tolist()
+	columns['Target'] = dataset['Target'].tolist()
 	columns['Fuels'] = dataset['Fuels'].tolist()
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
