@@ -199,7 +199,7 @@ def main():
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
 
-	heatmapDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std'])		# Dataframe later used for plotting the heatmap
+	heatmapDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std', '#'])		# Dataframe later used for plotting the heatmap
 
 	for i in range(len(permutations)):
 
@@ -209,7 +209,7 @@ def main():
 		for col in permutations[0]:		# Group the dataset for each categoric column. col is the name of the current categoric column
 			tempDataset = tempDataset.groupby(col)
 			tempDataset = tempDataset.get_group(permutations[i][col])
-			newRow.append(permutations[i][col])		# Start building the new row by adding the permutation's values
+			newRow.append(permutations[i][col])		# Start building the new row by adding the permutation's values. If less than 10 rows it resets at the start of the outer for loop
 
 		if tempDataset.shape[0] > 10:	# Only keep experiment types with more than 10 rows/experiments. TODO: keep everything?
 			print('\nProcessing experiments with ' + str(permutations[i]))# + ' are:\n' + str(tempDataset) + '\n')
@@ -225,6 +225,8 @@ def main():
 			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].mean())	# Only uses the biggest cluster
 			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].median())
 			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].std())
+			newRow.append(tempDataset.shape[0])
+
 			heatmapDf.loc[len(heatmapDf.index)] = newRow
 	
 	print(heatmapDf)
