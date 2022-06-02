@@ -202,7 +202,7 @@ def main():
 
 	# TODO: calculate median, avg, etc of experiments with a specific experiment type, reactor and fuel. I assume I have to calculate all possible combinations from the dict I found (no user input)
 
-	for i in range(len(permutations)):		# Was len(permutations)
+	for i in range(len(permutations)):
 
 		tempDataset = dataset
 										# permutations[0] = {'Experiment Type': 'ignition delay measurement', 'Reactor': 'shock tube', 'Fuels': "['H2', 'CO']"}
@@ -210,8 +210,8 @@ def main():
 			tempDataset = tempDataset.groupby(col)
 			tempDataset = tempDataset.get_group(permutations[i][col])
 
-		
-		print('Experiments with ' + str(permutations[i]) + ' are:\n' + str(tempDataset) + '\n')
+		#print('Experiments with ' + str(permutations[i]) + ' are:\n' + str(tempDataset) + '\n')
+		print('Experiments with ' + str(permutations[i]) + ' have
 
 		
 	
