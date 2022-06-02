@@ -212,7 +212,7 @@ def main():
 			newRow.append(permutations[i][col])		# Start building the new row by adding the permutation's values. If less than 10 rows it resets at the start of the outer for loop
 
 		if tempDataset.shape[0] > 10:	# Only keep experiment types with more than 10 rows/experiments. TODO: keep everything?
-			print('\nProcessing experiments with ' + str(permutations[i]))# + ' are:\n' + str(tempDataset) + '\n')
+			#print('\nProcessing experiments with ' + str(permutations[i]))# + ' are:\n' + str(tempDataset) + '\n')
 			tempDataset, clusterObj = cluster(tempDataset, clusterObj, 'fit_predict')				# TODO: cluster everything or only the biggest sets? Keep the ones smaller than 10?
 			clusterDf = tempDataset.groupby('ClusterID')
 			topClustersDict = findTopClusters(tempDataset)
@@ -230,6 +230,26 @@ def main():
 			heatmapDf.loc[len(heatmapDf.index)] = newRow
 	
 	print(heatmapDf)
+
+	lissst = []
+
+	for i in range(heatmapDf.shape[0]):
+		lissst.append(i)
+
+	#fig = go.Figure(data=go.Heatmap(x=heatmapDf['Fuels'], y=heatmapDf['Target'], z=heatmapDf['avg'], text=[heatmapDf['Experiment Type'], heatmapDf['Reactor'], heatmapDf['Target'], heatmapDf['Fuels']], texttemplate='%{text}'))
+	stdChart = go.Bar(	name='Standard deviation', x=lissst, y=heatmapDf['std'],
+						customdata=np.stack((heatmapDf['Experiment Type'], heatmapDf['Reactor'], heatmapDf['Target'], heatmapDf['Fuels']), axis=-1),
+						hovertemplate='Experiment Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Standard deviation: %{y}')
+	avgChart = go.Bar(	name='Average', x=lissst, y=heatmapDf['avg'],
+						customdata=np.stack((heatmapDf['Experiment Type'], heatmapDf['Reactor'], heatmapDf['Target'], heatmapDf['Fuels']), axis=-1),
+						hovertemplate='Experiment Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Average: %{y}')
+	medChart = go.Bar(	name='Median', x=lissst, y=heatmapDf['median'],
+						customdata=np.stack((heatmapDf['Experiment Type'], heatmapDf['Reactor'], heatmapDf['Target'], heatmapDf['Fuels']), axis=-1),
+						hovertemplate='Experiment Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Median: %{y}')
+	fig = go.Figure(data=[avgChart, medChart])	# Showing the std makes it ugly
+	fig.update_layout(title_text='Average and median score for each permutation in the model', barmode='group')
+	
+	fig.show()
 
 if __name__ == '__main__':
 	main()
