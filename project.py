@@ -112,51 +112,6 @@ def getPermutationsGeneric(columns, dictList):
 	return permutationsList
 
 
-def getPermutations(dataset, expTypeDict, reactorDict, fuelsDict, targetDict, minRows):		# returns a list of dataframes with rows with the same experiment type, reactor and fuel
-	
-	expTypeDf = dataset.groupby('Experiment Type')
-
-	subDfList = []
-
-	for i in range(len(expTypeDict)):		# For each experiment type
-		try:
-			subDf = expTypeDf.get_group(expTypeDict.get(i))
-			reactorSubDf = subDf.groupby('Reactor')
-		except:
-			continue
-
-		for j in range(len(reactorDict)):	# For each reactor type
-			try:
-				fuelsSubDf = reactorSubDf.get_group(reactorDict.get(j))
-				fuelsSubDf = fuelsSubDf.groupby('Fuels')
-			except:
-				continue
-
-			for k in range(len(fuelsDict)):
-				#print('current exptype and reactor and fuel: ' + str(expTypeDict.get(i)) + ', ' + str(reactorDict.get(j)) + ', ' + str(fuelsDict.get(k)))
-				try:
-					targetSubDf = fuelsSubDf.get_group(fuelsDict.get(k))	# Used to give an error if there are no rows with the current expType and reactor for [CH4, H2]
-					targetSubDf = targetSubDf.groupby('Target')
-				except:
-					continue
-			
-				for l in range(len(targetDict)):
-					try:
-						finalDf = targetSubDf.get_group(targetDict.get(l))	# Used to give an error if there are no rows with the current expType and reactor for [CH4, H2]
-						subDfList.append(finalDf)
-					except:
-						continue
-
-
-	newSubDfList = []
-
-	for i in range(len(subDfList)):			# Discard sub-dfs with too few rows. Create variable minRows or change # of clusters?
-		if subDfList[i].shape[0] > minRows:
-			newSubDfList.append(subDfList[i])
-	
-	return newSubDfList
-
-
 def cluster(dataset, fuelsDict, targetDict, expTypeDict, clusterObj, clusteringMode):		# Returns the clustered dataset and the "cluster" object so it can be used again for predict
 
 	#kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Reactor', 'Score', 'Error', 'shift'], axis=1)		# Removes the columns on which I don't want to perform Kmeans
@@ -238,13 +193,6 @@ def main():
 	targetDict = createDict(dataset, 'Target')
 	expTypeDict = createDict(dataset, 'Experiment Type')
 	reactorDict = createDict(dataset, 'Reactor')
-
-	'''
-	subDfList = getPermutations(dataset, expTypeDict, reactorDict, fuelsDict, targetDict, 10)	# 10 = minimum amount of rows each dataframe needs to have
-
-	for i in range(len(subDfList)):
-		print(subDfList[i])
-	'''
 
 	columns = {}
 	columns['Experiment Type'] = dataset['Experiment Type'].tolist()
