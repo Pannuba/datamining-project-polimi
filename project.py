@@ -91,8 +91,7 @@ def findTopClusters(dataset):
 	return sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
 
 
-# Returns the list of permutations (dict list) given a list of columns. Generic approach to getPermutations
-def getPermutationsGeneric(columns, dictList):
+def getPermutations(columns, dictList):			# Returns the list of permutations (dict list) given a list of columns. Generic approach to getPermutations
 
 	permutationsList = []
 	columnNames = list(columns)
@@ -102,7 +101,7 @@ def getPermutationsGeneric(columns, dictList):
 		
 		tempDict = {}
 
-		for col in columns:		# For each column (col = key of columns dict = column name)
+		for col in columns:		# For each column (col = key of columns dict = column name). columns = {ColName : [colValues], ...}
 		
 			tempDict[col] = columns[col][i]	# Add cell values to dict
 
@@ -199,10 +198,22 @@ def main():
 	columns['Reactor'] = dataset['Reactor'].tolist()
 	columns['Fuels'] = dataset['Fuels'].tolist()
 
-	testDict = getPermutationsGeneric(columns, [expTypeDict, reactorDict, fuelsDict])
+	permutations = getPermutations(columns, [expTypeDict, reactorDict, fuelsDict])	# List of all possible permutations in the dataset (by categoric columns)
 
-	for i in range(len(testDict)):
-		print(str(testDict[i]))
+	# TODO: calculate median, avg, etc of experiments with a specific experiment type, reactor and fuel. I assume I have to calculate all possible combinations from the dict I found (no user input)
+
+	for i in range(len(permutations)):		# Was len(permutations)
+
+		tempDataset = dataset
+										# permutations[0] = {'Experiment Type': 'ignition delay measurement', 'Reactor': 'shock tube', 'Fuels': "['H2', 'CO']"}
+		for col in permutations[0]:		# Group the dataset for each categoric column. col is the name of the current categoric column
+			tempDataset = tempDataset.groupby(col)
+			tempDataset = tempDataset.get_group(permutations[i][col])
+
+		
+		print('Experiments with ' + str(permutations[i]) + ' are:\n' + str(tempDataset) + '\n')
+
+		
 	
 
 if __name__ == '__main__':
