@@ -168,6 +168,28 @@ def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d sc
 	plt.update_traces()
 	plt.show()
 
+def barPlot(finalDf):
+	
+	lissst = []
+
+	for i in range(finalDf.shape[0]):
+		lissst.append(i)
+
+	#fig = go.Figure(data=go.Heatmap(x=finalDf['Fuels'], y=finalDf['Target'], z=finalDf['avg'], text=[finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']], texttemplate='%{text}'))
+	stdChart = go.Bar(	name='Standard deviation', x=lissst, y=finalDf['std'],
+						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
+						hovertemplate='Experiment Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Standard deviation: %{y}')
+	avgChart = go.Bar(	name='Average', marker_color='lightskyblue', x=lissst, y=finalDf['avg'],
+						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
+						hovertemplate='Experiment Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Average: %{y}')
+	medChart = go.Bar(	name='Median', marker_color='salmon', x=lissst, y=finalDf['median'],
+						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
+						hovertemplate='Experiment Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Median: %{y}')
+	fig = go.Figure(data=[avgChart, medChart, stdChart])
+	fig.update_layout(title_text='Average, median and standard deviation of the score for each permutation in the model', barmode='group')
+	
+	fig.show()
+
 
 def main():
 
@@ -231,25 +253,7 @@ def main():
 	
 	print(finalDf)
 
-	lissst = []
-
-	for i in range(finalDf.shape[0]):
-		lissst.append(i)
-
-	#fig = go.Figure(data=go.Heatmap(x=finalDf['Fuels'], y=finalDf['Target'], z=finalDf['avg'], text=[finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']], texttemplate='%{text}'))
-	stdChart = go.Bar(	name='Standard deviation', x=lissst, y=finalDf['std'],
-						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
-						hovertemplate='Experiment Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Standard deviation: %{y}')
-	avgChart = go.Bar(	name='Average', marker_color='lightskyblue', x=lissst, y=finalDf['avg'],
-						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
-						hovertemplate='Experiment Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Average: %{y}')
-	medChart = go.Bar(	name='Median', marker_color='salmon', x=lissst, y=finalDf['median'],
-						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
-						hovertemplate='Experiment Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Median: %{y}')
-	fig = go.Figure(data=[avgChart, medChart, stdChart])
-	fig.update_layout(title_text='Average and median score for each permutation in the model', barmode='group')
-	
-	fig.show()
+	barPlot(finalDf)
 
 if __name__ == '__main__':
 	main()
