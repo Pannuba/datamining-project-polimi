@@ -127,6 +127,49 @@ def cluster(dataset, clusterObj, clusteringMode):		# Returns the clustered datas
 
 	return dataset, clusterObj
 
+def getFinalDf(dataset, permutations, clusterObj):
+
+	finalDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std', '#'])#, 'cl'])		# Dataframe later used for plotting the bar graph
+	
+	for i in range(len(permutations)):
+
+		newRow = []
+		tempDataset = dataset
+										# permutations[0] = {'Experiment Type': 'ignition delay measurement', 'Reactor': 'shock tube', 'Fuels': "['H2', 'CO']"}
+		for col in permutations[0]:		# Group the dataset for each categoric column. col is the name of the current categoric column
+			tempDataset = tempDataset.groupby(col)
+			tempDataset = tempDataset.get_group(permutations[i][col])
+			newRow.append(permutations[i][col])		# Start building the new row by adding the permutation's values. If less than 10 rows it resets at the start of the outer for loop
+
+		if tempDataset.shape[0] >= 20:	# Only cluster experiment types with more than 20 rows/experiments
+			#print('\nProcessing experiments with ' + str(permutations[i]))# + ' are:\n' + str(tempDataset) + '\n')
+			tempDataset, clusterObj = cluster(tempDataset, clusterObj, 'fit_predict')
+			clusterDf = tempDataset.groupby('ClusterID')
+			topClustersDict = findTopClusters(tempDataset)
+			'''
+			for j in range(topClustersNum):
+				print(	'std dev and median of Score in cluster #' + str(j + 1) + ': ' +
+						str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].std()) + ', ' +
+						str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].median()) )
+			'''
+			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].mean())	# Only uses the biggest cluster. [0][0] gets the ID, [0][1] gets the amount of rows
+			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].median())
+			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].std())
+			#newRow.append(int(topClustersDict[0][1]))
+		
+		elif tempDataset.shape[0] >= 10:		# Discards experiment types with less than 10 rows (there would be >>100 total types)
+			newRow.append(tempDataset['Score'].mean())
+			newRow.append(tempDataset['Score'].median())
+			newRow.append(tempDataset['Score'].std())
+		
+		else:
+			continue		# Skips the last two lines in the for loop if it's an experiment type with too few rows
+
+		newRow.append(tempDataset.shape[0])
+		finalDf.loc[len(finalDf.index)] = newRow
+	
+	return finalDf
+
 
 def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d scatterplot and then show it
 	
@@ -167,6 +210,7 @@ def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d sc
 	plt.update_layout(scene = dict(xaxis_title='Temperature (K)', yaxis_title='Pressure (Bar)', zaxis_title='Phi'), title='Model', legend_title='Legend')
 	plt.update_traces()
 	plt.show()
+
 
 def barPlot(finalDf):
 	
@@ -220,45 +264,10 @@ def main():
 	columns['Fuels'] = dataset['Fuels'].tolist()
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
+	
+	finalDf = getFinalDf(dataset, permutations, clusterObj)
 
-	finalDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std', '#'])#, 'cl'])		# Dataframe later used for plotting the heatmap
-
-	for i in range(len(permutations)):
-
-		newRow = []
-		tempDataset = dataset
-										# permutations[0] = {'Experiment Type': 'ignition delay measurement', 'Reactor': 'shock tube', 'Fuels': "['H2', 'CO']"}
-		for col in permutations[0]:		# Group the dataset for each categoric column. col is the name of the current categoric column
-			tempDataset = tempDataset.groupby(col)
-			tempDataset = tempDataset.get_group(permutations[i][col])
-			newRow.append(permutations[i][col])		# Start building the new row by adding the permutation's values. If less than 10 rows it resets at the start of the outer for loop
-
-		if tempDataset.shape[0] >= 20:	# Only cluster experiment types with more than 20 rows/experiments
-			#print('\nProcessing experiments with ' + str(permutations[i]))# + ' are:\n' + str(tempDataset) + '\n')
-			tempDataset, clusterObj = cluster(tempDataset, clusterObj, 'fit_predict')				# TODO: cluster everything or only the biggest sets? Keep the ones smaller than 10?
-			clusterDf = tempDataset.groupby('ClusterID')
-			topClustersDict = findTopClusters(tempDataset)
-			'''
-			for j in range(topClustersNum):
-				print(	'std dev and median of Score in cluster #' + str(j + 1) + ': ' +
-						str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].std()) + ', ' +
-						str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].median()) )
-			'''
-			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].mean())	# Only uses the biggest cluster. [0][0] gets the ID, [0][1] gets the amount of rows
-			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].median())
-			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].std())
-			#newRow.append(int(topClustersDict[0][1]))
-		
-		elif tempDataset.shape[0] >= 10:		# Discards experiment types with less than 10 rows (there would be >>100 total types)
-			newRow.append(tempDataset['Score'].mean())
-			newRow.append(tempDataset['Score'].median())
-			newRow.append(tempDataset['Score'].std())
-		
-		else:
-			continue		# Skips the last two lines in the for loop if it's an experiment type with too few rows
-
-		newRow.append(tempDataset.shape[0])
-		finalDf.loc[len(finalDf.index)] = newRow
+	
 	
 	print(finalDf)
 
