@@ -168,7 +168,7 @@ def getFinalDf(dataset, permutations, clusterObj):
 		newRow.append(tempDataset.shape[0])
 		finalDf.loc[len(finalDf.index)] = newRow
 	
-	return finalDf
+	return finalDf.sort_values(by=['avg'], ascending=False)
 
 
 def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d scatterplot and then show it
