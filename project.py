@@ -199,7 +199,7 @@ def main():
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
 
-	heatmapDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std', '#'])		# Dataframe later used for plotting the heatmap
+	finalDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std', '#'])		# Dataframe later used for plotting the heatmap
 
 	for i in range(len(permutations)):
 
@@ -227,24 +227,24 @@ def main():
 			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].std())
 			newRow.append(tempDataset.shape[0])
 
-			heatmapDf.loc[len(heatmapDf.index)] = newRow
+			finalDf.loc[len(finalDf.index)] = newRow
 	
-	print(heatmapDf)
+	print(finalDf)
 
 	lissst = []
 
-	for i in range(heatmapDf.shape[0]):
+	for i in range(finalDf.shape[0]):
 		lissst.append(i)
 
-	#fig = go.Figure(data=go.Heatmap(x=heatmapDf['Fuels'], y=heatmapDf['Target'], z=heatmapDf['avg'], text=[heatmapDf['Experiment Type'], heatmapDf['Reactor'], heatmapDf['Target'], heatmapDf['Fuels']], texttemplate='%{text}'))
-	stdChart = go.Bar(	name='Standard deviation', x=lissst, y=heatmapDf['std'],
-						customdata=np.stack((heatmapDf['Experiment Type'], heatmapDf['Reactor'], heatmapDf['Target'], heatmapDf['Fuels']), axis=-1),
+	#fig = go.Figure(data=go.Heatmap(x=finalDf['Fuels'], y=finalDf['Target'], z=finalDf['avg'], text=[finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']], texttemplate='%{text}'))
+	stdChart = go.Bar(	name='Standard deviation', x=lissst, y=finalDf['std'],
+						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
 						hovertemplate='Experiment Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Standard deviation: %{y}')
-	avgChart = go.Bar(	name='Average', x=lissst, y=heatmapDf['avg'],
-						customdata=np.stack((heatmapDf['Experiment Type'], heatmapDf['Reactor'], heatmapDf['Target'], heatmapDf['Fuels']), axis=-1),
+	avgChart = go.Bar(	name='Average', marker_color='lightblue', x=lissst, y=finalDf['avg'],
+						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
 						hovertemplate='Experiment Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Average: %{y}')
-	medChart = go.Bar(	name='Median', x=lissst, y=heatmapDf['median'],
-						customdata=np.stack((heatmapDf['Experiment Type'], heatmapDf['Reactor'], heatmapDf['Target'], heatmapDf['Fuels']), axis=-1),
+	medChart = go.Bar(	name='Median', marker_color='salmon', x=lissst, y=finalDf['median'],
+						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
 						hovertemplate='Experiment Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Median: %{y}')
 	fig = go.Figure(data=[avgChart, medChart])	# Showing the std makes it ugly
 	fig.update_layout(title_text='Average and median score for each permutation in the model', barmode='group')
