@@ -2,7 +2,7 @@ import sys, openpyxl, pandas, sklearn, itertools, math, plotly.graph_objs as go,
 from sklearn.cluster import KMeans
 from pathlib import Path
 
-#pandas.set_option('display.max_rows', None)
+pandas.set_option('display.max_rows', None)
 
 def calculateAvg(dataset, column):
 
@@ -221,7 +221,7 @@ def main():
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
 
-	finalDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std', '#'])		# Dataframe later used for plotting the heatmap
+	finalDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std', '#'])#, 'cl'])		# Dataframe later used for plotting the heatmap
 
 	for i in range(len(permutations)):
 
@@ -233,7 +233,7 @@ def main():
 			tempDataset = tempDataset.get_group(permutations[i][col])
 			newRow.append(permutations[i][col])		# Start building the new row by adding the permutation's values. If less than 10 rows it resets at the start of the outer for loop
 
-		if tempDataset.shape[0] > 10:	# Only keep experiment types with more than 10 rows/experiments. TODO: keep everything?
+		if tempDataset.shape[0] >= 20:	# Only cluster experiment types with more than 20 rows/experiments
 			#print('\nProcessing experiments with ' + str(permutations[i]))# + ' are:\n' + str(tempDataset) + '\n')
 			tempDataset, clusterObj = cluster(tempDataset, clusterObj, 'fit_predict')				# TODO: cluster everything or only the biggest sets? Keep the ones smaller than 10?
 			clusterDf = tempDataset.groupby('ClusterID')
@@ -244,12 +244,21 @@ def main():
 						str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].std()) + ', ' +
 						str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].median()) )
 			'''
-			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].mean())	# Only uses the biggest cluster
+			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].mean())	# Only uses the biggest cluster. [0][0] gets the ID, [0][1] gets the amount of rows
 			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].median())
 			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].std())
-			newRow.append(tempDataset.shape[0])
+			#newRow.append(int(topClustersDict[0][1]))
+		
+		elif tempDataset.shape[0] >= 10:		# Discards experiment types with less than 10 rows (there would be >>100 total types)
+			newRow.append(tempDataset['Score'].mean())
+			newRow.append(tempDataset['Score'].median())
+			newRow.append(tempDataset['Score'].std())
+		
+		else:
+			continue		# Skips the last two lines in the for loop if it's an experiment type with too few rows
 
-			finalDf.loc[len(finalDf.index)] = newRow
+		newRow.append(tempDataset.shape[0])
+		finalDf.loc[len(finalDf.index)] = newRow
 	
 	print(finalDf)
 
