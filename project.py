@@ -130,7 +130,6 @@ def cluster(dataset, clusterObj, clusteringMode):		# Returns the clustered datas
 
 def getFinalDf(dataset, permutations, clusterObj):
 
-	print(dataset)
 	finalDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std', '#'])#, 'cl'])		# Dataframe later used for plotting the bar graph
 	
 	for i in range(len(permutations)):
@@ -263,11 +262,7 @@ def main():
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
 	
-	finalDf = getFinalDf(dataset, permutations, clusterObj)
-	
-	print(finalDf)
-
-	barChart(finalDf)
+	#barChart(finalDf)
 
 	######## Second model
 
@@ -288,9 +283,13 @@ def main():
 	#	print(permutations[i])
 	print("Permutations in the second model:  " + str(len(permutations2)))
 	print("Permutations in both models: " + str(len(commonPermutations)))
-	finalDf2 = getFinalDf(dataset2, permutations2, clusterObj)
+
+	finalDf = getFinalDf(dataset, commonPermutations, clusterObj)
+	finalDf2 = getFinalDf(dataset2, commonPermutations, clusterObj)
+	print(finalDf)
+	print('\n')
 	print(finalDf2)
-	barChart(finalDf2)
+	#barChart(finalDf2)
 
 if __name__ == '__main__':
 	main()
