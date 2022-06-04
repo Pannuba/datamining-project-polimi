@@ -212,7 +212,7 @@ def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d sc
 	plt.show()
 
 
-def barChart(finalDf, finalDf2):
+def barChart(finalDf, finalDf2, modelName1, modelName2):
 	
 	lissst = []
 
@@ -220,16 +220,16 @@ def barChart(finalDf, finalDf2):
 		lissst.append(i)
 
 	#fig = go.Figure(data=go.Heatmap(x=finalDf['Fuels'], y=finalDf['Target'], z=finalDf['avg'], text=[finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']], texttemplate='%{text}'))
-	avgChart = go.Bar(	name='Average 1', marker_color='lightskyblue', x=lissst, y=finalDf['avg'].round(4), error_y=dict(type='data', array=finalDf['std'].round(4)),
+	avgChart = go.Bar(	name=modelName1+' avg', marker_color='lightskyblue', x=lissst, y=finalDf['avg'].round(4), error_y=dict(type='data', array=finalDf['std'].round(4)),
 						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
 						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Average: %{y}')
-	medChart = go.Bar(	name='Median 1', marker_color='salmon', x=lissst, y=finalDf['median'].round(4),
+	medChart = go.Bar(	name=modelName1+' median', marker_color='salmon', x=lissst, y=finalDf['median'].round(4),
 						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
 						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Median: %{y}')
-	avgChart2 = go.Bar(	name='Average 2', marker_color='lightskyblue', x=lissst, y=finalDf2['avg'].round(4), error_y=dict(type='data', array=finalDf2['std'].round(4)),
+	avgChart2 = go.Bar(	name=modelName2+' avg', marker_color='lightgreen', x=lissst, y=finalDf2['avg'].round(4), error_y=dict(type='data', array=finalDf2['std'].round(4)),
 						customdata=np.stack((finalDf2['Experiment Type'], finalDf2['Reactor'], finalDf2['Target'], finalDf2['Fuels']), axis=-1),
 						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Average: %{y}')
-	medChart2 = go.Bar(	name='Median 2', marker_color='salmon', x=lissst, y=finalDf2['median'].round(4),
+	medChart2 = go.Bar(	name=modelName2+' median', marker_color='gold', x=lissst, y=finalDf2['median'].round(4),
 						customdata=np.stack((finalDf2['Experiment Type'], finalDf2['Reactor'], finalDf2['Target'], finalDf2['Fuels']), axis=-1),
 						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Median: %{y}')
 	fig = go.Figure(data=[avgChart, medChart, avgChart2, medChart2])
@@ -249,6 +249,8 @@ def main():
 
 	clusterObj = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
 
+	modelName1 = '1800.xlsx'
+	modelName2 = '2100_2110.xlsx'	# TODO: get from path. Build list?
 	dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
 	dataset = dataset.drop(dataset.columns[0], axis=1)		# Removes the first unnamed column
 
@@ -295,7 +297,7 @@ def main():
 	print(finalDf)
 	print('\n')
 	print(finalDf2)
-	barChart(finalDf, finalDf2)			# TODO: Pass list? Loop the permutation finding/finalDf building so it's possible to compare >2 models?
+	barChart(finalDf, finalDf2, modelName1, modelName2)			# TODO: Pass list? Loop the permutation finding/finalDf building so it's possible to compare >2 models?
 
 if __name__ == '__main__':
 	main()
