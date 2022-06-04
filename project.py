@@ -90,7 +90,7 @@ def findTopClusters(dataset):
 
 	return sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
 
-
+# TODO: dictList is useless!
 def getPermutations(columns, dictList):			# Returns the list of permutations (dict list) given a list of columns. Generic approach to getPermutations
 
 	permutationsList = []
@@ -127,12 +127,13 @@ def cluster(dataset, clusterObj, clusteringMode):		# Returns the clustered datas
 
 	return dataset, clusterObj
 
+
 def getFinalDf(dataset, permutations, clusterObj):
 
+	print(dataset)
 	finalDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std', '#'])#, 'cl'])		# Dataframe later used for plotting the bar graph
 	
 	for i in range(len(permutations)):
-
 		newRow = []
 		tempDataset = dataset
 										# permutations[0] = {'Experiment Type': 'ignition delay measurement', 'Reactor': 'shock tube', 'Fuels': "['H2', 'CO']"}
@@ -267,6 +268,29 @@ def main():
 	print(finalDf)
 
 	barChart(finalDf)
+
+	######## Second model
+
+	dataset2 = pandas.read_excel(Path('data', '2100_2110.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
+	dataset2 = dataset2.drop(dataset2.columns[0], axis=1)		# Removes the first unnamed column
+	
+	columns = {}
+	
+	columns['Experiment Type'] = dataset2['Experiment Type'].tolist()
+	columns['Reactor'] = dataset2['Reactor'].tolist()
+	columns['Target'] = dataset2['Target'].tolist()
+	columns['Fuels'] = dataset2['Fuels'].tolist()
+
+	permutations2 = getPermutations(columns, dictList)							# TODO: keep permutations that are in common with both models
+	commonPermutations = [x for x in permutations if x in permutations2]
+	print("Permutations in the first model: " + str(len(permutations)))
+	#for i in range(len(permutations)):
+	#	print(permutations[i])
+	print("Permutations in the second model:  " + str(len(permutations2)))
+	print("Permutations in both models: " + str(len(commonPermutations)))
+	finalDf2 = getFinalDf(dataset2, permutations2, clusterObj)
+	print(finalDf2)
+	barChart(finalDf2)
 
 if __name__ == '__main__':
 	main()
