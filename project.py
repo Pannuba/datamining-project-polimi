@@ -168,7 +168,7 @@ def getFinalDf(dataset, permutations, clusterObj):
 		newRow.append(tempDataset.shape[0])
 		finalDf.loc[len(finalDf.index)] = newRow
 	
-	return finalDf.sort_values(by=['avg'], ascending=False)
+	return finalDf
 
 
 def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d scatterplot and then show it
@@ -212,7 +212,7 @@ def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d sc
 	plt.show()
 
 
-def barChart(finalDf):
+def barChart(finalDf, finalDf2):
 	
 	lissst = []
 
@@ -220,14 +220,20 @@ def barChart(finalDf):
 		lissst.append(i)
 
 	#fig = go.Figure(data=go.Heatmap(x=finalDf['Fuels'], y=finalDf['Target'], z=finalDf['avg'], text=[finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']], texttemplate='%{text}'))
-	avgChart = go.Bar(	name='Average', marker_color='lightskyblue', x=lissst, y=finalDf['avg'].round(4), error_y=dict(type='data', array=finalDf['std'].round(4)),
+	avgChart = go.Bar(	name='Average 1', marker_color='lightskyblue', x=lissst, y=finalDf['avg'].round(4), error_y=dict(type='data', array=finalDf['std'].round(4)),
 						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
 						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Average: %{y}')
-	medChart = go.Bar(	name='Median', marker_color='salmon', x=lissst, y=finalDf['median'].round(4),
+	medChart = go.Bar(	name='Median 1', marker_color='salmon', x=lissst, y=finalDf['median'].round(4),
 						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
 						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Median: %{y}')
-	fig = go.Figure(data=[avgChart, medChart])
-	fig.update_layout(title_text='Average, median and standard deviation of the score for each permutation in the model', barmode='group')
+	avgChart2 = go.Bar(	name='Average 2', marker_color='lightskyblue', x=lissst, y=finalDf2['avg'].round(4), error_y=dict(type='data', array=finalDf2['std'].round(4)),
+						customdata=np.stack((finalDf2['Experiment Type'], finalDf2['Reactor'], finalDf2['Target'], finalDf2['Fuels']), axis=-1),
+						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Average: %{y}')
+	medChart2 = go.Bar(	name='Median 2', marker_color='salmon', x=lissst, y=finalDf2['median'].round(4),
+						customdata=np.stack((finalDf2['Experiment Type'], finalDf2['Reactor'], finalDf2['Target'], finalDf2['Fuels']), axis=-1),
+						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Median: %{y}')
+	fig = go.Figure(data=[avgChart, medChart, avgChart2, medChart2])
+	fig.update_layout(title_text='Average, median and standard deviation of the score for each permutation in the models', barmode='group')
 	
 	fig.show()
 
@@ -276,7 +282,7 @@ def main():
 	columns['Target'] = dataset2['Target'].tolist()
 	columns['Fuels'] = dataset2['Fuels'].tolist()
 
-	permutations2 = getPermutations(columns, dictList)							# TODO: keep permutations that are in common with both models
+	permutations2 = getPermutations(columns, dictList)
 	commonPermutations = [x for x in permutations if x in permutations2]
 	print("Permutations in the first model: " + str(len(permutations)))
 	#for i in range(len(permutations)):
@@ -289,7 +295,7 @@ def main():
 	print(finalDf)
 	print('\n')
 	print(finalDf2)
-	#barChart(finalDf2)
+	barChart(finalDf, finalDf2)			# TODO: Pass list? Loop the permutation finding/finalDf building so it's possible to compare >2 models?
 
 if __name__ == '__main__':
 	main()
