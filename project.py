@@ -273,12 +273,10 @@ def getCorrelationCoefficient(X, Y):		# Gets the correlation coeffient between t
 		else:							# Otherwise X has to be numerical and Y categorical
 			coefficient = calculateCorrelationRatio(Y, X)
 
-	return coefficient
+	return round(coefficient, 2)
 
 def getCorrelationMatrix(dataset):	# Builds a matrix where every cell is the correlation coefficient of two columns in the dataset
-	# I have to build every row. In each row the first element is the name of the column, and every other cell is the correlation coefficient between that column and every other column
-	# In order to check which type of correlation to use, for each column I check if it's categorical or numerical (isNumber() or something), and depending on the other
-	# column's type I use the correct coefficient.
+
 	columnNames = dataset.columns.values.tolist()
 	corrMatrix = pandas.DataFrame(columns=[' '] + columnNames)	# The matrix is a dataframe
 
