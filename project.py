@@ -232,18 +232,14 @@ def barChart(finalDf):
 def getCorrelationCoefficient(X, Y):		# Gets the correlation coeffient between the columns/variables X and Y
 	
 	if (X.equals(Y)):
-		print('X is equal to Y')
 		coefficient = 1
 		
 	elif (is_numeric_dtype(X) and is_numeric_dtype(Y)):			# If both variables are numerical, return Pearson's coefficient
-		print('X and Y are both numerical')
 		coefficient = np.corrcoef(X, Y)[0,1]
 
 	elif (not is_numeric_dtype(X) and not is_numeric_dtype(Y)):	# If both variables are categorical, return Cramer's V
-		print('X and Y are both categorical')
 		X2 = scipy.stats.chi2_contingency(pandas.crosstab(X, Y).values)[0]
 		N = len(X)	# The total amount of observation are the same as one column's length
-		print('x.nunique = ' + str(X.nunique()))
 		min_dimension = min(X.nunique(), Y.nunique()) - 1		# nunique() finds the number of unique values in each column. Since it's only 1 column it returns one integer
 		coefficient = np.sqrt((X2 / N) / min_dimension)
 
@@ -262,12 +258,12 @@ def getCorrelationMatrix(dataset):	# Builds a matrix where every cell is the cor
 	for i in range(dataset.shape[1]):		# For each column
 
 		newRow = []
-		newRow.append(dataset[columnNames[i]])	# The first element of each row is the name of the column
-
+		newRow.append(columnNames[i])	# The first element of each row is the name of the column
+		print(newRow)
 		for j in range(dataset.shape[1]):
 			print('Current couple: ' + columnNames[i] + ', ' + columnNames[j])
 			coeff = getCorrelationCoefficient(dataset[columnNames[i]], dataset[columnNames[j]])
-			print('coeff = ' + str(coeff))
+			print('coeff = ' + str(coeff) + '\n')
 			newRow.append(coeff)
 
 		corrMatrix.loc[len(corrMatrix.index)] = newRow		# Appends the new row to the correlation matrix
@@ -307,9 +303,8 @@ def main():
 	columns['Fuels'] = dataset['Fuels'].tolist()
 
 	print(dataset)
-	print(is_numeric_dtype(dataset['Reactor']))
-	print('Correlation matrix:')
-	print(getCorrelationMatrix(dataset))
+
+	getCorrelationMatrix(dataset).to_excel('correlationMatrix.xlsx')
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
 	
