@@ -2,7 +2,7 @@ import sys, openpyxl, pandas, sklearn, itertools, math, plotly.graph_objs as go,
 from sklearn.cluster import KMeans
 from pathlib import Path
 
-pandas.set_option('display.max_rows', None)
+#pandas.set_option('display.max_rows', None)
 
 def calculateAvg(dataset, column):
 
@@ -90,7 +90,7 @@ def findTopClusters(dataset):
 
 	return sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
 
-# TODO: dictList is useless!
+
 def getPermutations(columns, dictList):			# Returns the list of permutations (dict list) given a list of columns. Generic approach to getPermutations
 
 	permutationsList = []
@@ -113,7 +113,7 @@ def getPermutations(columns, dictList):			# Returns the list of permutations (di
 
 def cluster(dataset, clusterObj, clusteringMode):		# Returns the clustered dataset and the "cluster" object so it can be used again for predict
 
-	kmeans_dataset = dataset.drop(columns=['Exp SciExpeM ID', 'Experiment Type', 'Reactor', 'Target', 'Fuels', 'Error', 'd0L2', 'd1L2', 'd0Pe', 'd1Pe', 'shift'], axis=1)
+	kmeans_dataset = dataset.drop(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'Error', 'd0L2', 'd1L2', 'd0Pe', 'd1Pe', 'shift'], axis=1)
 
 	calculateAvg(kmeans_dataset, 'Phi')
 	calculateAvg(kmeans_dataset, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
@@ -127,12 +127,12 @@ def cluster(dataset, clusterObj, clusteringMode):		# Returns the clustered datas
 
 	return dataset, clusterObj
 
-
 def getFinalDf(dataset, permutations, clusterObj):
 
 	finalDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std', '#'])#, 'cl'])		# Dataframe later used for plotting the bar graph
 	
 	for i in range(len(permutations)):
+
 		newRow = []
 		tempDataset = dataset
 										# permutations[0] = {'Experiment Type': 'ignition delay measurement', 'Reactor': 'shock tube', 'Fuels': "['H2', 'CO']"}
@@ -168,7 +168,7 @@ def getFinalDf(dataset, permutations, clusterObj):
 		newRow.append(tempDataset.shape[0])
 		finalDf.loc[len(finalDf.index)] = newRow
 	
-	return finalDf
+	return finalDf.sort_values(by=['avg'], ascending=False)
 
 
 def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d scatterplot and then show it
@@ -212,7 +212,7 @@ def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d sc
 	plt.show()
 
 
-def barChart(finalDf, finalDf2, modelName1, modelName2):
+def barChart(finalDf):
 	
 	lissst = []
 
@@ -220,20 +220,14 @@ def barChart(finalDf, finalDf2, modelName1, modelName2):
 		lissst.append(i)
 
 	#fig = go.Figure(data=go.Heatmap(x=finalDf['Fuels'], y=finalDf['Target'], z=finalDf['avg'], text=[finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']], texttemplate='%{text}'))
-	avgChart = go.Bar(	name=modelName1+' avg', marker_color='lightskyblue', x=lissst, y=finalDf['avg'].round(4), error_y=dict(type='data', array=finalDf['std'].round(4)),
+	avgChart = go.Bar(	name='Average', marker_color='lightskyblue', x=lissst, y=finalDf['avg'].round(4), error_y=dict(type='data', array=finalDf['std'].round(4)),
 						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
 						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Average: %{y}')
-	medChart = go.Bar(	name=modelName1+' median', marker_color='salmon', x=lissst, y=finalDf['median'].round(4),
+	medChart = go.Bar(	name='Median', marker_color='salmon', x=lissst, y=finalDf['median'].round(4),
 						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
 						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Median: %{y}')
-	avgChart2 = go.Bar(	name=modelName2+' avg', marker_color='lightgreen', x=lissst, y=finalDf2['avg'].round(4), error_y=dict(type='data', array=finalDf2['std'].round(4)),
-						customdata=np.stack((finalDf2['Experiment Type'], finalDf2['Reactor'], finalDf2['Target'], finalDf2['Fuels']), axis=-1),
-						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Average: %{y}')
-	medChart2 = go.Bar(	name=modelName2+' median', marker_color='gold', x=lissst, y=finalDf2['median'].round(4),
-						customdata=np.stack((finalDf2['Experiment Type'], finalDf2['Reactor'], finalDf2['Target'], finalDf2['Fuels']), axis=-1),
-						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Median: %{y}')
-	fig = go.Figure(data=[avgChart, medChart, avgChart2, medChart2])
-	fig.update_layout(title_text='Average, median and standard deviation of the score for each permutation in the models', barmode='group')
+	fig = go.Figure(data=[avgChart, medChart])
+	fig.update_layout(title_text='Average, median and standard deviation of the score for each permutation in the model', barmode='group')
 	
 	fig.show()
 
@@ -249,9 +243,7 @@ def main():
 
 	clusterObj = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
 
-	modelName1 = '1800.xlsx'
-	modelName2 = '2100_2110.xlsx'	# TODO: get from path. Build list?
-	dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
+	dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl').drop(columns=['Exp SciExpeM ID', 'Experiment DOI', 'Chem Model', 'Chem Model ID'])
 	dataset = dataset.drop(dataset.columns[0], axis=1)		# Removes the first unnamed column
 
 	expTypeDict = createDict(dataset, 'Experiment Type')	# So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
@@ -270,34 +262,11 @@ def main():
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
 	
-	#barChart(finalDf)
-
-	######## Second model
-
-	dataset2 = pandas.read_excel(Path('data', '2100_2110.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
-	dataset2 = dataset2.drop(dataset2.columns[0], axis=1)		# Removes the first unnamed column
+	finalDf = getFinalDf(dataset, permutations, clusterObj)
 	
-	columns = {}
-	
-	columns['Experiment Type'] = dataset2['Experiment Type'].tolist()
-	columns['Reactor'] = dataset2['Reactor'].tolist()
-	columns['Target'] = dataset2['Target'].tolist()
-	columns['Fuels'] = dataset2['Fuels'].tolist()
-
-	permutations2 = getPermutations(columns, dictList)
-	commonPermutations = [x for x in permutations if x in permutations2]
-	print("Permutations in the first model: " + str(len(permutations)))
-	#for i in range(len(permutations)):
-	#	print(permutations[i])
-	print("Permutations in the second model:  " + str(len(permutations2)))
-	print("Permutations in both models: " + str(len(commonPermutations)))
-
-	finalDf = getFinalDf(dataset, commonPermutations, clusterObj)
-	finalDf2 = getFinalDf(dataset2, commonPermutations, clusterObj)
 	print(finalDf)
-	print('\n')
-	print(finalDf2)
-	barChart(finalDf, finalDf2, modelName1, modelName2)			# TODO: Pass list? Loop the permutation finding/finalDf building so it's possible to compare >2 models?
+
+	barChart(finalDf)
 
 if __name__ == '__main__':
 	main()
