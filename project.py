@@ -115,10 +115,6 @@ def cluster(dataset, clusterObj, clusteringMode):		# Returns the clustered datas
 
 	kmeans_dataset = dataset.drop(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'Error', 'd0L2', 'd1L2', 'd0Pe', 'd1Pe', 'shift'], axis=1)
 
-	calculateAvg(kmeans_dataset, 'Phi')
-	calculateAvg(kmeans_dataset, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
-	calculateAvg(kmeans_dataset, 'Temperature (K)')
-
 	if clusteringMode == 'fit_predict':
 		dataset['ClusterID'] = clusterObj.fit_predict(kmeans_dataset)
 	
@@ -231,6 +227,9 @@ def barChart(finalDf):
 	
 	fig.show()
 
+def getCorrelationMatrix(dataset):	# Builds a matrix where every cell is the correlation coefficient of two columns in the dataset
+	print(np.corrcoef(dataset['Score'], dataset['d0L2'])[0,1])		# Returns the Pearson coefficient between two numerical variables
+	return 1
 
 def main():
 
@@ -246,6 +245,10 @@ def main():
 	dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl').drop(columns=['Exp SciExpeM ID', 'Experiment DOI', 'Chem Model', 'Chem Model ID'])
 	dataset = dataset.drop(dataset.columns[0], axis=1)		# Removes the first unnamed column
 
+	calculateAvg(dataset, 'Phi')
+	calculateAvg(dataset, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
+	calculateAvg(dataset, 'Temperature (K)')
+
 	expTypeDict = createDict(dataset, 'Experiment Type')	# So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
 	reactorDict = createDict(dataset, 'Reactor')
 	targetDict = createDict(dataset, 'Target')
@@ -260,13 +263,17 @@ def main():
 	columns['Target'] = dataset['Target'].tolist()
 	columns['Fuels'] = dataset['Fuels'].tolist()
 
+	print(dataset)
+	print('Correlation matrix:')
+	print(getCorrelationMatrix(dataset))
+
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
 	
 	finalDf = getFinalDf(dataset, permutations, clusterObj)
 	
 	print(finalDf)
 
-	barChart(finalDf)
+	#barChart(finalDf)
 
 if __name__ == '__main__':
 	main()
