@@ -1,8 +1,9 @@
-import sys, openpyxl, pandas, sklearn, itertools, math, plotly.graph_objs as go, plotly, numpy as np
+import sys, openpyxl, pandas, sklearn, itertools, math, scipy.stats, plotly.graph_objs as go, plotly, numpy as np
 from sklearn.cluster import KMeans
+from pandas.api.types import is_numeric_dtype
 from pathlib import Path
 
-#pandas.set_option('display.max_rows', None)
+pandas.set_option('display.max_rows', None)
 
 def calculateAvg(dataset, column):
 
@@ -227,9 +228,51 @@ def barChart(finalDf):
 	
 	fig.show()
 
+
+def getCorrelationCoefficient(X, Y):		# Gets the correlation coeffient between the columns/variables X and Y
+	
+	if (X.equals(Y)):
+		print('X is equal to Y')
+		coefficient = 1
+		
+	elif (is_numeric_dtype(X) and is_numeric_dtype(Y)):			# If both variables are numerical, return Pearson's coefficient
+		print('X and Y are both numerical')
+		coefficient = np.corrcoef(X, Y)[0,1]
+
+	elif (not is_numeric_dtype(X) and not is_numeric_dtype(Y)):	# If both variables are categorical, return Cramer's V
+		print('X and Y are both categorical')
+		X2 = scipy.stats.chi2_contingency(pandas.crosstab(X, Y).values)[0]
+		N = len(X)	# The total amount of observation are the same as one column's length
+		print('x.nunique = ' + str(X.nunique()))
+		min_dimension = min(X.nunique(), Y.nunique()) - 1		# nunique() finds the number of unique values in each column. Since it's only 1 column it returns one integer
+		coefficient = np.sqrt((X2 / N) / min_dimension)
+
+	else:														# If one variable is numerical and one is categorical
+		coefficient = 500
+
+	return coefficient
+
 def getCorrelationMatrix(dataset):	# Builds a matrix where every cell is the correlation coefficient of two columns in the dataset
-	print(np.corrcoef(dataset['Score'], dataset['d0L2'])[0,1])		# Returns the Pearson coefficient between two numerical variables
-	return 1
+	# I have to build every row. In each row the first element is the name of the column, and every other cell is the correlation coefficient between that column and every other column
+	# In order to check which type of correlation to use, for each column I check if it's categorical or numerical (isNumber() or something), and depending on the other
+	# column's type I use the correct coefficient.
+	columnNames = dataset.columns.values.tolist()
+	corrMatrix = pandas.DataFrame(columns=[' '] + columnNames)	# The matrix is a dataframe
+
+	for i in range(dataset.shape[1]):		# For each column
+
+		newRow = []
+		newRow.append(dataset[columnNames[i]])	# The first element of each row is the name of the column
+
+		for j in range(dataset.shape[1]):
+			print('Current couple: ' + columnNames[i] + ', ' + columnNames[j])
+			coeff = getCorrelationCoefficient(dataset[columnNames[i]], dataset[columnNames[j]])
+			print('coeff = ' + str(coeff))
+			newRow.append(coeff)
+
+		corrMatrix.loc[len(corrMatrix.index)] = newRow		# Appends the new row to the correlation matrix
+
+	return corrMatrix
 
 def main():
 
@@ -264,6 +307,7 @@ def main():
 	columns['Fuels'] = dataset['Fuels'].tolist()
 
 	print(dataset)
+	print(is_numeric_dtype(dataset['Reactor']))
 	print('Correlation matrix:')
 	print(getCorrelationMatrix(dataset))
 
