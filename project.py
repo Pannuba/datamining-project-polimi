@@ -229,9 +229,33 @@ def barChart(finalDf):
 	fig.show()
 
 
+def calculateCorrelationRatio(cat_variable, num_variable):
+	fcat, _ = pandas.factorize(cat_variable)
+	cat_num = np.max(fcat)+1
+	y_avg_array = np.zeros(cat_num)
+	n_array = np.zeros(cat_num)
+	
+	for i in range(0,cat_num):
+		cat_measures = num_variable[np.argwhere(fcat == i).flatten()]
+		n_array[i] = len(cat_measures)
+		y_avg_array[i] = np.average(cat_measures)
+
+	y_total_avg = np.sum(np.multiply(y_avg_array,n_array))/np.sum(n_array)
+
+	numerator = np.sum(np.multiply(n_array,np.power(np.subtract(y_avg_array,y_total_avg),2)))
+	denominator = np.sum(np.power(np.subtract(num_variable,y_total_avg),2))
+	
+	if numerator == 0:
+		eta = 0.0
+	else:
+		eta = np.sqrt(numerator/denominator)
+	
+	return eta
+
+
 def getCorrelationCoefficient(X, Y):		# Gets the correlation coeffient between the columns/variables X and Y
 	
-	if (X.equals(Y)):
+	if (X.equals(Y)):		# Even without this check the coefficients are still 1, which means the calculations are correct!
 		coefficient = 1
 		
 	elif (is_numeric_dtype(X) and is_numeric_dtype(Y)):			# If both variables are numerical, return Pearson's coefficient
@@ -239,12 +263,15 @@ def getCorrelationCoefficient(X, Y):		# Gets the correlation coeffient between t
 
 	elif (not is_numeric_dtype(X) and not is_numeric_dtype(Y)):	# If both variables are categorical, return Cramer's V
 		X2 = scipy.stats.chi2_contingency(pandas.crosstab(X, Y).values)[0]
-		N = len(X)	# The total amount of observation are the same as one column's length
+		N = len(X)	# The total amount of observations are the same as one column's length
 		min_dimension = min(X.nunique(), Y.nunique()) - 1		# nunique() finds the number of unique values in each column. Since it's only 1 column it returns one integer
 		coefficient = np.sqrt((X2 / N) / min_dimension)
 
 	else:														# If one variable is numerical and one is categorical
-		coefficient = 500
+		if (is_numeric_dtype(Y)):		# If Y is numerical (and thus X is categorical)
+			coefficient = calculateCorrelationRatio(X, Y)
+		else:							# Otherwise X has to be numerical and Y categorical
+			coefficient = calculateCorrelationRatio(Y, X)
 
 	return coefficient
 
@@ -259,11 +286,10 @@ def getCorrelationMatrix(dataset):	# Builds a matrix where every cell is the cor
 
 		newRow = []
 		newRow.append(columnNames[i])	# The first element of each row is the name of the column
-		print(newRow)
+
 		for j in range(dataset.shape[1]):
-			print('Current couple: ' + columnNames[i] + ', ' + columnNames[j])
 			coeff = getCorrelationCoefficient(dataset[columnNames[i]], dataset[columnNames[j]])
-			print('coeff = ' + str(coeff) + '\n')
+			print('Coefficient of (' + columnNames[i] + ', ' + columnNames[j] + '): ' + str(coeff))
 			newRow.append(coeff)
 
 		corrMatrix.loc[len(corrMatrix.index)] = newRow		# Appends the new row to the correlation matrix
@@ -304,7 +330,7 @@ def main():
 
 	print(dataset)
 
-	getCorrelationMatrix(dataset).to_excel('correlationMatrix.xlsx')
+	getCorrelationMatrix(dataset).to_excel('correlation_matrix.xlsx')
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
 	
