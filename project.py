@@ -1,9 +1,9 @@
-import sys, openpyxl, pandas, sklearn, itertools, math, scipy.stats, plotly.graph_objs as go, plotly, numpy as np
+import sys, openpyxl, pandas, sklearn, itertools, math, scipy.stats, distfit, plotly.graph_objs as go, plotly, numpy as np
 from sklearn.cluster import KMeans
 from pandas.api.types import is_numeric_dtype
 from pathlib import Path
 
-pandas.set_option('display.max_rows', None)
+#pandas.set_option('display.max_rows', None)
 
 def calculateAvg(dataset, column):
 
@@ -11,6 +11,8 @@ def calculateAvg(dataset, column):
 		string = dataset[column].iloc[i][1:-1].replace(',', '')		# [1:-1] removes the first and last char, so '(1.0, 1.0)' becomes '1.0, 1.0'. replace() removes the comma
 		minmax = [float(num) for num in string.split()]  			# List with the min and max value of the interval
 		dataset[column].iloc[i] = (minmax[0] + minmax[1]) / 2		# Updates the cell with the average
+	
+	dataset[column] = pandas.to_numeric(dataset[column])
 
 
 def getKeyFromValue(dictionary, value):
@@ -35,7 +37,7 @@ def createDict(dataset, column):
 	return newDict
 
 
-def updateTableFromDict(table, column, dictionary):
+def updateTableFromDict(table, column, dictionary):		# Currently unused, clustering is only performed on numerical variables
 
 	for i in range(table.shape[0]):
 		table[column].iloc[i] = getKeyFromValue(dictionary, table[column].iloc[i])
@@ -127,7 +129,7 @@ def cluster(dataset, clusterObj, clusteringMode):		# Returns the clustered datas
 def getFinalDf(dataset, permutations, clusterObj):
 
 	finalDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'avg', 'median', 'std', '#'])#, 'cl'])		# Dataframe later used for plotting the bar graph
-	
+
 	for i in range(len(permutations)):
 
 		newRow = []
@@ -253,27 +255,43 @@ def calculateCorrelationRatio(cat_variable, num_variable):
 	return eta
 
 
+def isCategorical(X):	# Checks if a variable is categorical even if it has numerical values (e.g. a variable with strings converted to numbers with updateTableFromDict). Tested, works
+	
+	if not is_numeric_dtype(X):		# If the variable has string values, it's definitely categorical
+		return True
+	
+	possibleValues = X.unique().shape[0]
+	totalValues = X.shape[0]
+	#print('the variable has ' + str(possibleValues) + ' possible values, and ' + str(totalValues) + ' total values')
+
+	if ((possibleValues / totalValues) < 0.05):		# If the possible values are less than 10% of all values, it's most likely a categorical column
+		return True
+	
+	return False
+
+
 def getCorrelationCoefficient(X, Y):		# Gets the correlation coeffient between the columns/variables X and Y
 	
 	if (X.equals(Y)):		# Even without this check the coefficients are still 1, which means the calculations are correct!
 		coefficient = 1
 		
-	elif (is_numeric_dtype(X) and is_numeric_dtype(Y)):			# If both variables are numerical, return Pearson's coefficient
+	elif (not isCategorical(X) and not isCategorical(Y)):			# If both variables are numerical, return Pearson's coefficient
 		coefficient = np.corrcoef(X, Y)[0,1]
 
-	elif (not is_numeric_dtype(X) and not is_numeric_dtype(Y)):	# If both variables are categorical, return Cramer's V
+	elif (isCategorical(X) and isCategorical(Y)):	# If both variables are categorical, return Cramer's V
 		X2 = scipy.stats.chi2_contingency(pandas.crosstab(X, Y).values)[0]
 		N = len(X)	# The total amount of observations are the same as one column's length
 		min_dimension = min(X.nunique(), Y.nunique()) - 1		# nunique() finds the number of unique values in each column. Since it's only 1 column it returns one integer
 		coefficient = np.sqrt((X2 / N) / min_dimension)
 
 	else:														# If one variable is numerical and one is categorical
-		if (is_numeric_dtype(Y)):		# If Y is numerical (and thus X is categorical)
+		if (not isCategorical(Y)):		# If Y is numerical (and thus X is categorical)
 			coefficient = calculateCorrelationRatio(X, Y)
 		else:							# Otherwise X has to be numerical and Y categorical
 			coefficient = calculateCorrelationRatio(Y, X)
 
 	return round(coefficient, 2)
+
 
 def getCorrelationMatrix(dataset):	# Builds a matrix where every cell is the correlation coefficient of two columns in the dataset
 
@@ -328,13 +346,24 @@ def main():
 
 	print(dataset)
 
-	getCorrelationMatrix(dataset).to_excel('correlation_matrix.xlsx')
+	getCorrelationMatrix(dataset).to_excel('../correlation_matrix.xlsx')
+
+	dist = distfit.distfit(todf=True, distr='norm')
+	'''
+	results = dist.fit_transform(dataset['Target'])
+	print(dist.summary)		# the lowest the score, the more likely the data has that distribution
+
+	fig = go.Figure()
+	fig.add_trace(go.Histogram(x=dataset['Target']))
+	fig.show()
+	'''
+	print(isCategorical(dataset['Temperature (K)']))
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
 	
 	finalDf = getFinalDf(dataset, permutations, clusterObj)
 	
-	print(finalDf)
+	#print(finalDf)
 
 	#barChart(finalDf)
 
