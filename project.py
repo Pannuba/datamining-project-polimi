@@ -133,7 +133,7 @@ def getFinalDf(dataset, permutations, clusterObj):
 	for i in range(len(permutations)):
 
 		newRow = []
-		tempDataset = dataset
+		tempDataset = dataset.df
 										# permutations[0] = {'Experiment Type': 'ignition delay measurement', 'Reactor': 'shock tube', 'Fuels': "['H2', 'CO']"}
 		for col in permutations[0]:		# Group the dataset for each categoric column. col is the name of the current categoric column
 			tempDataset = tempDataset.groupby(col)
@@ -347,6 +347,57 @@ def getCorrelationMatrix(dataset):	# Builds a matrix where every cell is the cor
 
 	return corrMatrix
 
+
+class Dataset:
+
+	def __init__(self, path):
+		self.df = pandas.read_excel(path, engine='openpyxl').drop(columns=['Exp SciExpeM ID', 'Experiment DOI', 'Chem Model', 'Chem Model ID'])
+		self.df = self.df.drop(self.df.columns[0], axis=1)		# Removes the first unnamed column
+		
+		calculateAvg(self.df, 'Phi')
+		calculateAvg(self.df, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
+		calculateAvg(self.df, 'Temperature (K)')
+
+		self.columns = {}
+	
+		self.columns['Experiment Type'] = self.df['Experiment Type'].tolist()
+		self.columns['Reactor'] = self.df['Reactor'].tolist()
+		self.columns['Target'] = self.df['Target'].tolist()
+		self.columns['Fuels'] = self.df['Fuels'].tolist()
+
+		self.permutations = self.getPermutations()
+	
+	def createDictList(self):
+		expTypeDict = createDict(self.df, 'Experiment Type')	# So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
+		reactorDict = createDict(self.df, 'Reactor')
+		targetDict = createDict(self.df, 'Target')
+		fuelsDict = createDict(self.df, 'Fuels')
+
+		self.dictList = [expTypeDict, reactorDict, targetDict, fuelsDict]
+
+	def getPermutations(self):			# Returns the list of permutations (dict list) given a list of columns. Generic approach to getPermutations
+		permutationsList = []
+		columnNames = list(self.columns)
+		rows = len(self.columns[columnNames[0]])
+
+		for i in range(rows):		# For each row
+			
+			tempDict = {}
+
+			for col in self.columns:		# For each column (col = key of columns dict = column name). columns = {ColName : [colValues], ...}
+			
+				tempDict[col] = self.columns[col][i]	# Add cell values to dict
+
+			if tempDict not in permutationsList:
+				permutationsList.append(tempDict)
+
+		return permutationsList		# List of all possible permutations in the dataset (by categoric columns)
+
+
+
+
+
+
 def main():
 
 	#firstModelPath = Path(sys.argv[1])		# Get model paths from command line, disabled for now
@@ -358,66 +409,24 @@ def main():
 
 	clusterObj = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
 
-	dataset = pandas.read_excel(Path('data', '1800.xlsx'), engine='openpyxl').drop(columns=['Exp SciExpeM ID', 'Experiment DOI', 'Chem Model', 'Chem Model ID'])
-	dataset = dataset.drop(dataset.columns[0], axis=1)		# Removes the first unnamed column
+	dataset = Dataset(Path('data', '1800.xlsx'))
+	dataset.getPermutations()
 
-	calculateAvg(dataset, 'Phi')
-	calculateAvg(dataset, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
-	calculateAvg(dataset, 'Temperature (K)')
+	print(dataset.df)
 
-	expTypeDict = createDict(dataset, 'Experiment Type')	# So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
-	reactorDict = createDict(dataset, 'Reactor')
-	targetDict = createDict(dataset, 'Target')
-	fuelsDict = createDict(dataset, 'Fuels')
-
-	dictList = [expTypeDict, reactorDict, targetDict, fuelsDict]
-
-	columns = {}
-	
-	columns['Experiment Type'] = dataset['Experiment Type'].tolist()
-	columns['Reactor'] = dataset['Reactor'].tolist()
-	columns['Target'] = dataset['Target'].tolist()
-	columns['Fuels'] = dataset['Fuels'].tolist()
-
-	print(dataset)
-
-	getCorrelationMatrix(dataset).to_excel('../correlation_matrix.xlsx')
-
-	dist = distfit.distfit(todf=True, distr='norm')
-	'''
-	results = dist.fit_transform(dataset['Target'])
-	print(dist.summary)		# the lowest the score, the more likely the data has that distribution
-
-	fig = go.Figure()
-	fig.add_trace(go.Histogram(x=dataset['Target']))
-	fig.show()
-	'''
-
-	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
+	getCorrelationMatrix(dataset.df).to_excel('../correlation_matrix.xlsx')
 
 	#print(finalDf)
 	#barChart(finalDf)
 
 	# Second model		TODO: write function
 
-	dataset2 = pandas.read_excel(Path('data', '2100_2110.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
-	dataset2 = dataset2.drop(dataset2.columns[0], axis=1)		# Removes the first unnamed column
+	dataset2 = Dataset(Path('data', '2100_2110.xlsx'))
 
-	calculateAvg(dataset2, 'Phi')
-	calculateAvg(dataset2, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
-	calculateAvg(dataset2, 'Temperature (K)')
+	commonPermutations = [x for x in dataset.permutations if x in dataset2.permutations]
 
-	columns2 = {}
-
-	columns2['Experiment Type'] = dataset2['Experiment Type'].tolist()
-	columns2['Reactor'] = dataset2['Reactor'].tolist()
-	columns2['Target'] = dataset2['Target'].tolist()
-	columns2['Fuels'] = dataset2['Fuels'].tolist()
-
-	permutations2 = getPermutations(columns2, dictList)
-	commonPermutations = [x for x in permutations if x in permutations2]
-	print("Permutations in the first model: " + str(len(permutations)))
-	print("Permutations in the second model:  " + str(len(permutations2)))
+	print("Permutations in the first model: " + str(len(dataset.permutations)))
+	print("Permutations in the second model:  " + str(len(dataset2.permutations)))
 	print("Permutations in both models: " + str(len(commonPermutations)))
 	for i in range(len(commonPermutations)):
 		print(commonPermutations[i])
