@@ -170,6 +170,37 @@ def getFinalDf(dataset, permutations, clusterObj):
 	return finalDf.sort_values(by=['avg'], ascending=False)
 
 
+def getResultsDf(df1, df2, commonPermutations):
+	
+	resultsDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'Score'])
+
+	for i in range(len(commonPermutations)):	# Build the dataframe by adding a row for each permutation
+
+		newRow = []
+		tempDf1 = df1
+		tempDf2 = df2
+		
+		#print('current permutation is ' + str(commonPermutations[i]['Experiment Type']) + ', ' + str(commonPermutations[i]['Reactor']) + ', ' + str(commonPermutations[i]['Target']) + ', ' + str(commonPermutations[i]['Fuels']))
+
+		for col in commonPermutations[0]:				# Add the names of the current permutation's experiment type, reactor, target and fuels
+			newRow.append(commonPermutations[i][col])
+		
+		for col in commonPermutations[0]:				# Gets the row in each dataframe with the current experiment type, reactor, target and fuels
+			tempDf1 = tempDf1.groupby(col).get_group(commonPermutations[i][col])
+			tempDf2 = tempDf2.groupby(col).get_group(commonPermutations[i][col])
+		
+		score1 = tempDf1['avg'].values[0]
+		score2 = tempDf2['avg'].values[0]
+
+		print('score1: ' + str(score1))
+		print('score2: ' + str(score2))
+		
+		newRow.append(str(((score1 - score2) * 100)) + '%')
+		resultsDf.loc[len(resultsDf.index)] = newRow
+	
+	return resultsDf
+
+
 def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d scatterplot and then show it
 	
 	xc = []
@@ -305,7 +336,7 @@ def getCorrelationMatrix(dataset):	# Builds a matrix where every cell is the cor
 
 		for j in range(dataset.shape[1]):
 			coeff = getCorrelationCoefficient(dataset[columnNames[i]], dataset[columnNames[j]])
-			print('Coefficient of (' + columnNames[i] + ', ' + columnNames[j] + '): ' + str(coeff))
+			#print('Coefficient of (' + columnNames[i] + ', ' + columnNames[j] + '): ' + str(coeff))
 			newRow.append(coeff)
 
 		corrMatrix.loc[len(corrMatrix.index)] = newRow		# Appends the new row to the correlation matrix
@@ -357,15 +388,49 @@ def main():
 	fig.add_trace(go.Histogram(x=dataset['Target']))
 	fig.show()
 	'''
-	print(isCategorical(dataset['Temperature (K)']))
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
 	
 	finalDf = getFinalDf(dataset, permutations, clusterObj)
-	
-	#print(finalDf)
 
+	#print(finalDf)
 	#barChart(finalDf)
+
+	# Second model		TODO: write function
+
+	dataset2 = pandas.read_excel(Path('data', '2100_2110.xlsx'), engine='openpyxl').drop(columns=['Experiment DOI', 'Chem Model', 'Chem Model ID'])
+	dataset2 = dataset2.drop(dataset2.columns[0], axis=1)		# Removes the first unnamed column
+
+	calculateAvg(dataset2, 'Phi')
+	calculateAvg(dataset2, 'Pressure (Bar)')		# Also update the main dataset with the average values for phi, P and T
+	calculateAvg(dataset2, 'Temperature (K)')
+
+	columns2 = {}
+
+	columns2['Experiment Type'] = dataset2['Experiment Type'].tolist()
+	columns2['Reactor'] = dataset2['Reactor'].tolist()
+	columns2['Target'] = dataset2['Target'].tolist()
+	columns2['Fuels'] = dataset2['Fuels'].tolist()
+
+	permutations2 = getPermutations(columns2, dictList)
+	commonPermutations = [x for x in permutations if x in permutations2]
+	print("Permutations in the first model: " + str(len(permutations)))
+	print("Permutations in the second model:  " + str(len(permutations2)))
+	print("Permutations in both models: " + str(len(commonPermutations)))
+	for i in range(len(commonPermutations)):
+		print(commonPermutations[i])
+
+	finalDf2 = getFinalDf(dataset2, commonPermutations, clusterObj)
+
+	# Build a third dataframe with the common permutations that shows the % difference between the two model for each permutation
+	print(finalDf)
+	print('finalDf up, now finalDf2:')
+	print(finalDf2)
+	resultsDf = getResultsDf(finalDf, finalDf2, commonPermutations)
+	print(resultsDf)
+
+
+
 
 if __name__ == '__main__':
 	main()
