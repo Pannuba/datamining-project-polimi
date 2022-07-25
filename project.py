@@ -146,12 +146,6 @@ def getFinalDf(dataset, permutations, clusterObj):
 			tempDataset, clusterObj = cluster(tempDataset, clusterObj, 'fit_predict')
 			clusterDf = tempDataset.groupby('ClusterID')
 			topClustersDict = findTopClusters(tempDataset)
-			'''
-			for j in range(topClustersNum):
-				print(	'std dev and median of Score in cluster #' + str(j + 1) + ': ' +
-						str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].std()) + ', ' +
-						str(clusterDf.get_group(int(topClustersDict[j][0]))['Score'].median()) )
-			'''
 			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].mean())	# Only uses the biggest cluster. [0][0] gets the ID, [0][1] gets the amount of rows
 			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].median())
 			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].std())
@@ -346,23 +340,19 @@ def main():
 	clusterObj = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
 
 	dataset = Dataset(Path('data', '1800.xlsx'))
-	dataset.getPermutations()
-
-	print(dataset.df)
+	dataset2 = Dataset(Path('data', '2100_2110.xlsx'))
 
 	getCorrelationMatrix(dataset.df).to_excel('../correlation_matrix.xlsx')
 
-	#print(finalDf)
-
-	dataset2 = Dataset(Path('data', '2100_2110.xlsx'))
-
 	commonPermutations = [x for x in dataset.permutations if x in dataset2.permutations]
 
+	'''
 	print("Permutations in the first model: " + str(len(dataset.permutations)))
 	print("Permutations in the second model:  " + str(len(dataset2.permutations)))
 	print("Permutations in both models: " + str(len(commonPermutations)))
 	for i in range(len(commonPermutations)):
 		print(commonPermutations[i])
+	'''
 
 	finalDf = getFinalDf(dataset, commonPermutations, clusterObj)
 	finalDf2 = getFinalDf(dataset2, commonPermutations, clusterObj)
@@ -372,12 +362,10 @@ def main():
 	print(finalDf)
 	print('finalDf up, now finalDf2:')
 	print(finalDf2)
+
 	resultsDf = getResultsDf(finalDf, finalDf2, commonPermutations)
-	print(resultsDf)
 	resultsDf.to_excel('../results.xlsx')
-
-
-
+	
 
 if __name__ == '__main__':
 	main()
