@@ -186,8 +186,12 @@ def getResultsDf(df1, df2, commonPermutations):
 			newRow.append(commonPermutations[i][col])
 		
 		for col in commonPermutations[0]:				# Gets the row in each dataframe with the current experiment type, reactor, target and fuels
-			tempDf1 = tempDf1.groupby(col).get_group(commonPermutations[i][col])
-			tempDf2 = tempDf2.groupby(col).get_group(commonPermutations[i][col])
+			
+			try:	# Throws expections because it looks for a permutation that's not in the dataset because it has too few rows (discarded in getFinalDf)
+				tempDf1 = tempDf1.groupby(col).get_group(commonPermutations[i][col])
+				tempDf2 = tempDf2.groupby(col).get_group(commonPermutations[i][col])
+			except:
+				pass
 		
 		score1 = tempDf1['avg'].values[0]
 		score2 = tempDf2['avg'].values[0]
@@ -195,7 +199,7 @@ def getResultsDf(df1, df2, commonPermutations):
 		print('score1: ' + str(score1))
 		print('score2: ' + str(score2))
 		
-		newRow.append(str(((score1 - score2) * 100)) + '%')
+		newRow.append(str(round(((score1 - score2) * 100), 2)) + '%')
 		resultsDf.loc[len(resultsDf.index)] = newRow
 	
 	return resultsDf
@@ -390,8 +394,6 @@ def main():
 	'''
 
 	permutations = getPermutations(columns, dictList)	# List of all possible permutations in the dataset (by categoric columns)
-	
-	finalDf = getFinalDf(dataset, permutations, clusterObj)
 
 	#print(finalDf)
 	#barChart(finalDf)
@@ -420,6 +422,7 @@ def main():
 	for i in range(len(commonPermutations)):
 		print(commonPermutations[i])
 
+	finalDf = getFinalDf(dataset, commonPermutations, clusterObj)
 	finalDf2 = getFinalDf(dataset2, commonPermutations, clusterObj)
 
 	# Build a third dataframe with the common permutations that shows the % difference between the two model for each permutation
@@ -428,6 +431,7 @@ def main():
 	print(finalDf2)
 	resultsDf = getResultsDf(finalDf, finalDf2, commonPermutations)
 	print(resultsDf)
+	resultsDf.to_excel('../results.xlsx')
 
 
 
