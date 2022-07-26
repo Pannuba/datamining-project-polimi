@@ -86,26 +86,6 @@ def findTopClusters(dataset):
 	return sorted(clusterCount.items(), key=lambda x: x[1], reverse=True)
 
 
-def getPermutations(columns, dictList):			# Returns the list of permutations (dict list) given a list of columns. Generic approach to getPermutations
-
-	permutationsList = []
-	columnNames = list(columns)
-	rows = len(columns[columnNames[0]])
-
-	for i in range(rows):		# For each row
-		
-		tempDict = {}
-
-		for col in columns:		# For each column (col = key of columns dict = column name). columns = {ColName : [colValues], ...}
-		
-			tempDict[col] = columns[col][i]	# Add cell values to dict
-
-		if tempDict not in permutationsList:
-			permutationsList.append(tempDict)
-
-	return permutationsList
-
-
 def cluster(dataset, clusterObj, clusteringMode):		# Returns the clustered dataset and the "cluster" object so it can be used again for predict
 
 	kmeans_dataset = dataset.drop(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'Error', 'd0L2', 'd1L2', 'd0Pe', 'd1Pe', 'shift'], axis=1)
