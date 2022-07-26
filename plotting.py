@@ -60,3 +60,23 @@ def barChart(finalDf):
 	
 	fig.show()
 
+
+def barChartBoth(finalDf, finalDf2, modelName1, modelName2):
+	
+	lissst = []
+
+	for i in range(finalDf.shape[0]):
+		lissst.append(i)
+
+	avgChart = go.Bar(	name=modelName1+' avg', marker_color='lightskyblue', x=lissst, y=finalDf['avg'].round(4), error_y=dict(type='data', array=finalDf['std'].round(4)),
+						customdata=np.stack((finalDf['Experiment Type'], finalDf['Reactor'], finalDf['Target'], finalDf['Fuels']), axis=-1),
+						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Average: %{y}')
+	
+	avgChart2 = go.Bar(	name=modelName2+' avg', marker_color='salmon', x=lissst, y=finalDf2['avg'].round(4), error_y=dict(type='data', array=finalDf2['std'].round(4)),
+						customdata=np.stack((finalDf2['Experiment Type'], finalDf2['Reactor'], finalDf2['Target'], finalDf2['Fuels']), axis=-1),
+						hovertemplate='Exp. Type: %{customdata[0]}<br>Reactor: %{customdata[1]}<br>Target: %{customdata[2]}<br>Fuels: %{customdata[3]}<br>Average: %{y}')
+
+	fig = go.Figure(data=[avgChart, avgChart2])
+	fig.update_layout(title_text='Average, median and standard deviation of the score for each permutation in the models', barmode='group')
+	
+	fig.show()

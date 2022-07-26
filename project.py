@@ -288,6 +288,8 @@ def main():
 	print('finalDf up, now finalDf2:')
 	print(finalDf2)
 
+	barChartBoth(finalDf, finalDf2, 'First model', 'Second model')
+
 	resultsDf = getResultsDf(finalDf, finalDf2, commonPermutations)
 	resultsDf.to_excel('../results.xlsx')
 	
