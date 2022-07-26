@@ -138,7 +138,7 @@ def getFinalDf(dataset, permutations, clusterObj):
 
 def getResultsDf(df1, df2, commonPermutations):
 	
-	resultsDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'Score'])
+	resultsDf = pandas.DataFrame(columns=['Experiment Type', 'Reactor', 'Target', 'Fuels', 'Score Delta'])
 
 	for i in range(len(commonPermutations)):	# Build the dataframe by adding a row for each permutation
 
@@ -167,6 +167,8 @@ def getResultsDf(df1, df2, commonPermutations):
 		
 		newRow.append(str(round(((score1 - score2) * 100), 2)) + '%')
 		resultsDf.loc[len(resultsDf.index)] = newRow
+	
+	resultsDf = resultsDf.sort_values(by='Score Delta', ascending=False)
 	
 	return resultsDf
 
