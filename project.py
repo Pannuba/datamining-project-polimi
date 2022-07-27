@@ -88,7 +88,6 @@ def getFinalDf(dataset, permutations, clusterObj):
 			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].mean())	# Only uses the biggest cluster. [0][0] gets the ID, [0][1] gets the amount of rows
 			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].median())
 			newRow.append(clusterDf.get_group(int(topClustersDict[0][0]))['Score'].std())
-			#newRow.append(int(topClustersDict[0][1]))
 		
 		elif tempDataset.shape[0] >= 10:		# Discards experiment types with less than 10 rows (there would be >>100 total types)
 			newRow.append(tempDataset['Score'].mean())
@@ -238,20 +237,23 @@ def main():
 	dataset = Dataset(Path('data', '1800.xlsx'))
 	dataset2 = Dataset(Path('data', '2100_2110.xlsx'))
 
-	getCorrelationMatrix(dataset.df).to_excel('../correlation_matrix.xlsx')
+	corrMatrix = getCorrelationMatrix(dataset.df).iloc[:,1:]	# Drops the first column to plot the heatmap correctly
+	corrMatrix.to_excel('../correlation_matrix.xlsx')
+	fig = go.Figure(data=go.Heatmap({'z':corrMatrix.values.tolist(), 'x':corrMatrix.columns.tolist(), 'y':corrMatrix.columns.tolist()}))
+	fig.show()
 
 	commonPermutations = [x for x in dataset.permutations if x in dataset2.permutations]
 
 	finalDf = getFinalDf(dataset, commonPermutations, clusterObj)
 	finalDf2 = getFinalDf(dataset2, commonPermutations, clusterObj)
-	barChart(finalDf)
+	#barChart(finalDf)
 
 	# Build a third dataframe with the common permutations that shows the % difference between the two model for each permutation
 	print(finalDf)
 	print('finalDf up, now finalDf2:')
 	print(finalDf2)
 
-	barChartBoth(finalDf, finalDf2, 'First model', 'Second model')
+	#barChartBoth(finalDf, finalDf2, 'First model', 'Second model')
 
 	resultsDf = getResultsDf(finalDf, finalDf2, commonPermutations)
 	resultsDf.to_excel('../results.xlsx')
