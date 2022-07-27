@@ -206,7 +206,7 @@ def isCategorical(X):	# Checks if a variable is categorical even if it has numer
 	totalValues = X.shape[0]
 	#print('the variable has ' + str(possibleValues) + ' possible values, and ' + str(totalValues) + ' total values')
 
-	if ((possibleValues / totalValues) < 0.05):		# If the possible values are less than 10% of all values, it's most likely a categorical column
+	if ((possibleValues / totalValues) < 0.05):		# If the possible values are less than 5% of all values, it's most likely a categorical column
 		return True
 	
 	return False
@@ -218,7 +218,7 @@ def getCorrelationCoefficient(X, Y):		# Gets the correlation coeffient between t
 		coefficient = 1
 		
 	elif (not isCategorical(X) and not isCategorical(Y)):			# If both variables are numerical, return Pearson's coefficient
-		coefficient = np.corrcoef(X, Y)[0,1]
+		coefficient = X.corr(Y, method='kendall')
 
 	elif (isCategorical(X) and isCategorical(Y)):	# If both variables are categorical, return Cramer's V
 		X2 = scipy.stats.chi2_contingency(pandas.crosstab(X, Y).values)[0]
