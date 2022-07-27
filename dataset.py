@@ -27,14 +27,6 @@ class Dataset:
 			self.df[column].iloc[i] = (minmax[0] + minmax[1]) / 2		# Updates the cell with the average
 		
 		self.df[column] = pandas.to_numeric(self.df[column])
-	
-	def createDictList(self):
-		expTypeDict = createDict(self.df, 'Experiment Type')	# So I keep the dictionary to analyze the results in each cluster (to reconvert from number to string)
-		reactorDict = createDict(self.df, 'Reactor')
-		targetDict = createDict(self.df, 'Target')
-		fuelsDict = createDict(self.df, 'Fuels')
-
-		self.dictList = [expTypeDict, reactorDict, targetDict, fuelsDict]
 
 	def getPermutations(self):			# Returns the list of permutations (dict list) given a list of columns. Generic approach to getPermutations
 		permutationsList = []

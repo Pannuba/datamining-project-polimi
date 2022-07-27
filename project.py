@@ -29,39 +29,6 @@ def createDict(dataset, column):
 	return newDict
 
 
-def updateTableFromDict(table, column, dictionary):		# Currently unused, clustering is only performed on numerical variables
-
-	for i in range(table.shape[0]):
-		table[column].iloc[i] = getKeyFromValue(dictionary, table[column].iloc[i])
-
-
-def filterDataset(dataset, column, value):		# Deletes all rows that don't have a specific value of a column. Used for filtering by fuel type
-	
-	newDataset = dataset
-
-	for i in range(dataset.shape[0]):
-		if dataset[column].iloc[i] != value:
-			newDataset = newDataset.drop([i])
-			i += 1
-	
-	return newDataset
-
-
-def keepTopNClusters(dataset, n, topClustersDict):		# topClustersDict: {[#cluster : #rows], ...}, topClustersDict[i][0] gives the cluster number, [i][1] the number of rows for cluster #i
-	
-	newDataset = dataset
-	topClusters = []
-
-	for i in range(n):
-		topClusters.append(topClustersDict[i][0])
-
-	for i in range(dataset.shape[0]):
-		if dataset['ClusterID'].iloc[i] not in topClusters:
-			newDataset = newDataset.drop([i])
-	
-	return newDataset
-
-
 def findTopClusters(dataset):
 	
 	clusterDict = createDict(dataset, 'ClusterID')		# Because some clusters have a negative index (OPTICS algorithm)
@@ -97,6 +64,7 @@ def cluster(dataset, clusterObj, clusteringMode):		# Returns the clustered datas
 		dataset['ClusterID'] = clusterObj.predict(kmeans_dataset)
 
 	return dataset, clusterObj
+
 
 def getFinalDf(dataset, permutations, clusterObj):
 
@@ -174,6 +142,7 @@ def getResultsDf(df1, df2, commonPermutations):
 
 
 def calculateCorrelationRatio(cat_variable, num_variable):
+	
 	fcat, _ = pandas.factorize(cat_variable)
 	cat_num = np.max(fcat)+1
 	y_avg_array = np.zeros(cat_num)
@@ -272,14 +241,6 @@ def main():
 	getCorrelationMatrix(dataset.df).to_excel('../correlation_matrix.xlsx')
 
 	commonPermutations = [x for x in dataset.permutations if x in dataset2.permutations]
-
-	'''
-	print("Permutations in the first model: " + str(len(dataset.permutations)))
-	print("Permutations in the second model:  " + str(len(dataset2.permutations)))
-	print("Permutations in both models: " + str(len(commonPermutations)))
-	for i in range(len(commonPermutations)):
-		print(commonPermutations[i])
-	'''
 
 	finalDf = getFinalDf(dataset, commonPermutations, clusterObj)
 	finalDf2 = getFinalDf(dataset2, commonPermutations, clusterObj)
