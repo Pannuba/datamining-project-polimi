@@ -41,7 +41,7 @@ def plot(topClustersNum, dataset, topClustersDict, clusterDf):			# Prepare 3d sc
 	plt.show()
 
 
-def barChart(finalDf):
+def barChart(finalDf):		# Shows the bar chart for only one model
 	
 	lissst = []
 
@@ -61,7 +61,7 @@ def barChart(finalDf):
 	fig.show()
 
 
-def barChartBoth(finalDf, finalDf2, modelName1, modelName2):
+def barChartBoth(finalDf, finalDf2, modelName1, modelName2):	# Shows the bar chart comparing two datasets
 	
 	lissst = []
 

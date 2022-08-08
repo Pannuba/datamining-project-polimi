@@ -1,4 +1,4 @@
-import openpyxl, sklearn, itertools, scipy.stats
+import openpyxl, sklearn, itertools, scipy.stats, sys
 from sklearn.cluster import KMeans
 from pandas.api.types import is_numeric_dtype
 from pathlib import Path
@@ -225,8 +225,8 @@ def getCorrelationMatrix(dataset):	# Builds a matrix where every cell is the cor
 
 def main():
 
-	#firstModelPath = Path(sys.argv[1])		# Get model paths from command line, disabled for now
-	#secondModelPath = Path(sys.argv[2])
+	firstModelPath = Path(sys.argv[1])		# Get model paths from command line
+	secondModelPath = Path(sys.argv[2])
 
 	pandas.options.mode.chained_assignment = None	# Suppresses the annoying SettingWithCopyWarning
 	kmeans_clusters = 5		# Was 15, changed because subclusters are much smaller
@@ -234,8 +234,8 @@ def main():
 
 	clusterObj = sklearn.cluster.KMeans(n_clusters=kmeans_clusters)
 
-	dataset = Dataset(Path('data', '1800.xlsx'))
-	dataset2 = Dataset(Path('data', '2100_2110.xlsx'))
+	dataset = Dataset(firstModelPath)
+	dataset2 = Dataset(secondModelPath)
 
 	corrMatrix = getCorrelationMatrix(dataset.df).iloc[:,1:]	# Drops the first column to plot the heatmap correctly
 	corrMatrix.to_excel('../correlation_matrix.xlsx')
@@ -253,7 +253,7 @@ def main():
 	print('finalDf up, now finalDf2:')
 	print(finalDf2)
 
-	#barChartBoth(finalDf, finalDf2, 'First model', 'Second model')
+	barChartBoth(finalDf, finalDf2, 'First model', 'Second model')
 
 	resultsDf = getResultsDf(finalDf, finalDf2, commonPermutations)
 	resultsDf.to_excel('../results.xlsx')
